@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: get method tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<p> Set method test: success case 01 </p>
+<p> Set Signal.Drivetrain.Transmission.Gear </p>
+<p> (* Run VSSS server before starting test) </p>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+
+var t = async_test("Set method success 01");
+
+var vehicle  = new WebSocket(VISS_URL);
+
+vehicle.onopen = function() {
+  // request a signal
+  var reqId_1 = "reqid-00001";
+  var reqId_2 = "reqid-00002";
+  var path = "Signal.Drivetrain.Transmission.Gear";
+  var val = 5; //Gear value: -1 to 15
+
+  // process messages from the server
+  vehicle.onmessage = t.step_func(
+    function(event) {
+      var msg = JSON.parse(event.data);
+
+      // if requestId matches and msg.value has value, judge as OK.
+      if (isSetSuccessResponse(reqId_1, msg)) {
+        // try get for verification
+        addLogMessage("<br>Received set response");
+        addLogMessage("<br>Send get request for verification");
+        vehicle.send('{"action":"get","path":"'+ path+'"'
+                    + ' ,"requestId":"'+reqId_2+'"'
+                    + '}');
+      }
+      if (isGetSuccessResponse(reqId_2, msg)) {
+        addLogMessage("<br>Get response received. value = " + msg.value);
+        if (msg.value === val) {
+          addLogSuccess("Set method successed");
+        } else {
+          addLogFailure("Set method failed");
+        }
+        t.step_timeout(function() {
+          assert_true(msg.value === val, "OK: "+path + ": value = " + msg.value);
+          vehicle.close();
+          t.done();
+        }, TIME_FINISH_WAIT);
+      }
+    }
+  );
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    addLogMessage("Fishish by timeout");
+    t.done();
+  }, 4000);
+
+  addLogMessage("<br>Send set request: path="+path+", value="+val);
+  vehicle.send('{"action":"set","path":"'+ path+'"'
+              + ' ,"value":"'+val+'"'
+              + ' ,"requestId":"'+reqId_1+'"'
+              + '}');
+}
+</script>
