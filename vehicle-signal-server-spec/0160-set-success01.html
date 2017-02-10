@@ -61,7 +61,7 @@ vehicle.onopen = function() {
   t.step_timeout(function() {
     addLogMessage("Fishish by timeout");
     t.done();
-  }, 4000);
+  }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send set request: path="+path+", value="+val);
   vehicle.send('{"action":"set","path":"'+ path+'"'

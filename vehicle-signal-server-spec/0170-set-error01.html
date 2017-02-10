@@ -57,7 +57,7 @@ vehicle.onopen = function() {
       vehicle.close();
       t.done();
     }, TIME_FINISH_WAIT);
-  }, 4000);
+  }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send set request: path="+path+", value="+val);
   vehicle.send('{"action":"set","path":"'+ path+'"'

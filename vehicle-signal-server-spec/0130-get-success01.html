@@ -54,7 +54,7 @@ vehicle.onopen = function() {
       vehicle.close();
       t.done();
     }, TIME_FINISH_WAIT);
-  }, 2000);
+  }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send get request: path="+path);
   vehicle.send('{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
