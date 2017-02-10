@@ -7,8 +7,8 @@
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Get method test: success case 01</p>
-<p> Get Signal.Drivetrain.Transmission.Speed</p>
+<p> Subscribe Test: success case 01</p>
+<p> Subscribe Signal.Drivetrain.Transmission.Speed</p>
 <p> (* Run VSSS server before starting test) </p>
 
 <h3>
@@ -16,7 +16,7 @@
 </h3>
 
 <script>
-var t = async_test("Get method success 01");
+var t = async_test("Subscribe test: success 01");
 
 var vehicle  = new WebSocket(VISS_URL);
 
@@ -119,7 +119,7 @@ vehicle.onopen = function() {
       vehicle.close();
       t.done();
     }, TIME_FINISH_WAIT);
-  }, 3000);
+  }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send subscribe request: path="+path);
   vehicle.send('{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+reqId+'"}');

@@ -4,7 +4,9 @@ var VISS_HOST = "10.5.162.71";
 var VISS_PORT = "3000";
 var VISS_URL = "ws://"+VISS_HOST+":"+VISS_PORT
 
-var TIME_FINISH_WAIT = 2000; // wait time to let human see result message
+var TIME_FINISH_WAIT = 1000; // wait time to let human see result message
+
+var TIME_OUT_TIME = 3000;    // time to forcefully terminate the test
 
 // === get helper ===
 function isGetSuccessResponse( _reqId, _inJson) {
