@@ -1,24 +1,23 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: get method tests</title>
+<title>Vehicle Signal Server Spec Test: subscribe() test</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Subscribe Test: success case 01</p>
-<p> Subscribe Signal.Drivetrain.Transmission.Speed</p>
-<p> (* Run VSSS server before starting test) </p>
+<h3> Subscribe Test: subscribe full process success</h3>
+<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
 
 <h3>
 <div id="log"></div>
 </h3>
 
 <script>
-var t = async_test("Subscribe test: success 01");
+var t = async_test("Subscribe test: subscribe full process success ");
 
-var vehicle  = new WebSocket(VISS_URL);
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 var PH_START            = 0;
 var PH_SENT_SUBSCRIBE   = 1;
@@ -26,6 +25,8 @@ var PH_SUBSCRIBED       = 2;
 var PH_SENT_UNSUBSCRIBE = 3;
 var PH_UNSUBSCRIBED     = 4;
 var PH_END              = 5;
+
+var NOTIFICATION_COUNT  = 3;
 
 vehicle.onopen = function() {
   // request a signal
@@ -40,7 +41,6 @@ vehicle.onopen = function() {
     function(event) {
       var msg = JSON.parse(event.data);
 
-      // subscirbe送信後
       if (phase == PH_START) {
         // nothing to do
       } else if (phase == PH_SENT_SUBSCRIBE) {
@@ -51,13 +51,10 @@ vehicle.onopen = function() {
           phase = PH_SUBSCRIBED;
           //assert_true(true, "OK: "+path + ": value = " + msg.value);
         } else if (isSubscribeErrorResponse(reqId, msg)) {
-          addLogFailure("Subscribe method failed");
+          helper_terminate_failure("subscribeErrorResponse received. test failed.");
           phase = PH_END;
         } else {
-          // subscribe response 以外を受信した場合
-          // 基本、このケースはないはず
-          // 無視するか、エラーとしてここで終わるか？
-          // とりあえずは無視しておく
+          // ignore this case
         }
 
       } else if (phase == PH_SUBSCRIBED) {
@@ -65,11 +62,11 @@ vehicle.onopen = function() {
 
         if (isSubscriptionNotification(subId, msg)){
           // after received 3 notif, send unsubscribe
-          if (notifCount > 4) {
+          if (notifCount > NOTIFICATION_COUNT) {
             // do unsubscribe
             addLogMessage("Send unsubscribe request");
             vehicle.send('{"action":"unsubscribe"'
-                          +' ,"path":"'+ path +'"'
+                          +' ,"subscriptionId":"'+subId+'"'
                           +' ,"requestId":"'+reqId+'"'
                           +'}');
             phase = PH_SENT_UNSUBSCRIBE;
@@ -80,8 +77,8 @@ vehicle.onopen = function() {
 
       } else if (phase == PH_SENT_UNSUBSCRIBE) {
         // wait for unsubscribe response
-        if (isUnsubscribeSuccess(reqId, subId, msg)) {
-          // unsubscibe成功
+        if (isUnsubscribeSuccessResponse(reqId, subId, msg)) {
+          // unsubscibe success
           addLogMessage("unsubscribeSuccessResponse received");
           phase = PH_UNSUBSCRIBED;
           addLogSuccess("subscribe/unsubscribe successed");
@@ -92,33 +89,25 @@ vehicle.onopen = function() {
           }, TIME_FINISH_WAIT);
 
         } else if (isUnsubscribeErrorResponse(reqId, subId, msg)) {
-          // unsubscribe失敗
-          addLogMessage("unsubscribeErrorResponse received");
-          // 失敗の場合はもう一度unsubscribeする？
-          // server側にsubscribe が残っているはず
-          // 当面は無視
-
+          // unsubscribe failure
+          helper_terminate_failure("unsubscribeErrorResponse received");
+          // need unsubscribe() again?
+          // ignore
         } else {
-          // その他ケース
-          // 当面は無視
+          // ignore this case
         }
 
       } else if (phase == PH_UNSUBSCRIBED) {
         // nothing to do
-
       }
-
     }
   );
 
   // in case server doesn't return response
   t.step_timeout(function() {
-    addLogFailure("Fishish by timeout");
-    t.step_timeout(function() {
-      assert_true(false);
-      vehicle.close();
-      t.done();
-    }, TIME_FINISH_WAIT);
+    if (phase < PH_SUBSCRIBED) {_
+      helper_termintate_failure("Finish by timeout");
+    }
   }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send subscribe request: path="+path);
@@ -126,3 +115,4 @@ vehicle.onopen = function() {
   phase = PH_SENT_SUBSCRIBE;
 }
 </script>
+

@@ -1,0 +1,172 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: unsubscribe tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Unsubscribe Test: unsubscribeAll test. Success case</h3>
+<h3> Success Condition: Execute three subscibe and then execute unsubscribeAll. 
+If all subscription is undone, success.</h3>
+<h3>Path1:  <span id="id_path1"></span></h3>
+<h3>Path2:  <span id="id_path2"></span></h3>
+<h3>Path3:  <span id="id_path3"></span></h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("Unsubscribe Test: unsubscribeAll test. Success case");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var PH_START            = 0;
+var PH_SENT_SUBSCRIBE   = 1;
+var PH_SUBSCRIBED       = 2;
+var PH_SENT_UNSUBSCRIBE = 3;
+var PH_UNSUBSCRIBED     = 4;
+var PH_END              = 5;
+
+var NOTIFICATION_COUNT  = 3;
+
+var TIME_MORATRIUM = 3000;
+var TIME_CONFIRM_UNSUBSCRIBE = 4000;
+
+vehicle.onopen = function() {
+  // request a signal
+  var reqId1 = "reqid-0261";
+  var reqId2 = "reqid-0262";
+  var reqId3 = "reqid-0263";
+  var reqId_unsubAll = "reqid-0264";
+
+  var path1 = "Signal.Drivetrain.Transmission.Speed";
+  var path2 = "Signal.Drivetrain.InternalCombustionEngine.RPM";
+  var path3 = "Signal.Chassis.SteeringWheel.Angle";
+
+  var notifCount = 0;
+  var phase = PH_START;
+  var subId = null;
+  var invalidSubId = "12345678";
+
+  var subSuccess1 = false;
+  var subSuccess2 = false;
+  var subSuccess3 = false;
+
+  var bNothingHasCome = true;
+
+  document.getElementById("id_path1").innerText = path1;
+  document.getElementById("id_path2").innerText = path2;
+  document.getElementById("id_path3").innerText = path3;
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var msg = JSON.parse(event.data);
+
+    // subscirbe has sent
+    if (phase == PH_START) {
+      // nothing to do
+    } else if (phase == PH_SENT_SUBSCRIBE) {
+      t.step_func(function() {
+        // wait for subscribe response
+        if (isSubscribeSuccessResponse(reqId1, msg)) {
+          addLogMessage("reqId1: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
+          subSuccess1 = true;
+        }
+        if (isSubscribeSuccessResponse(reqId2, msg)) {
+          addLogMessage("reqId2: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
+          subSuccess2 = true;
+        }
+        if (isSubscribeSuccessResponse(reqId3, msg)) {
+          addLogMessage("reqId3: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
+          subSuccess3 = true;
+        }
+
+        if (subSuccess1 && subSuccess2 && subSuccess3) {
+          addLogMessage("All subscribe succeeded.");
+          addLogMessage("Send unsubscribeAll request");
+          vehicle.send('"action":"unsubscribeAll"'
+                        +' ,"requestId":"'+reqId_unsubAll+'"');
+          phase = PH_SENT_UNSUBSCRIBE;
+
+          // Set timeout for unsubscribeAll request
+          t.step_timeout(function() {
+            if (phase < PH_UNSUBSCRIBED) {
+              helper_terminate_failure("Finish by timeout. Response for unsubscribeAll not returned.");
+            }
+          }, TIME_OUT_TIME);
+
+        }
+      })();
+    } else if (phase == PH_SENT_UNSUBSCRIBE) {
+      t.step_func(function() {
+        // wait for unsubscribe response
+        addLogMessage(JSON.stringify(msg));
+        var res = isUnsubscribeAllSuccessResponse(reqId_unsubAll, msg);
+
+        if (res) {
+          // unsubscibe success
+          assert_true(res, "unsubscribeAll success response received.");
+          phase = PH_UNSUBSCRIBED;
+
+          // wait for remaining subscriptionNotification exhaustion
+          t.step_timeout(function() {
+            // wait for some time and no subscriptionNotifcation has reached
+            // judge as unsubscribeAll succeeded
+            t.step_timeout(function() { // wait for confirmation time
+              if (bNothingHasCome) {
+                helper_terminate_success("unsubscribeAll success");
+              }
+            }, TIME_CONFIRM_UNSUBSCRIBEALL);
+          }, TIME_MORATRIUM);
+
+        } else if (isUnsubscribeErrorResponse(reqId_unsubAll, "", msg)) {
+          // unsubscibe error
+          // Test is already success. Terminate anyway
+          phase = PH_END;
+          helper_terminate_failure("unsubscribeErrorResponse received");
+        }
+      })();
+    } else if (phase == PH_UNSUBSCRIBED) {
+      // confirm all the subscription have been unsubscribed
+      // - wait for subscriptionNotification for some time
+      // - if notifications continues to come, unsubscribeAll is failed
+      // TODO: changed to better judgement cliteria
+
+      t.step_func(function() {
+        var bNotifSuccess = isSubscriptionNotification( "", msg);
+        var bNotifError = isSubscriptionNotificationError( "", msg);
+
+        if (bNotifSuccess || bNotifError) {
+          // subscriptionNotification arrived. unsubscribeAll was not succeeded
+          bNotingHasCome = false;
+          helper_terminate_failure("unsubscribeAll failed");
+        }
+
+      })();
+    }
+  }
+
+  addLogMessage("Send subscribe request: path1="+ path1);
+  vehicle.send('{"action":"subscribe","path":"'+ path1 +'" ,"requestId":"'+reqId1+'"}');
+
+  addLogMessage("Send subscribe request: path2="+ path2);
+  vehicle.send('{"action":"subscribe","path":"'+ path2 +'" ,"requestId":"'+reqId2+'"}');
+
+  addLogMessage("Send subscribe request: path3="+path3);
+  vehicle.send('{"action":"subscribe","path":"'+ path3 +'" ,"requestId":"'+reqId3+'"}');
+
+  phase = PH_SENT_SUBSCRIBE;
+
+  // Set timeout for subscribe request
+  t.step_timeout(function() {
+    if (phase < PH_SUBSCRIBED) {
+      helper_terminate_failure("Finish by timeout. Response for subscribe not returned.");
+    }
+  }, TIME_OUT_TIME);
+
+}
+</script>
+

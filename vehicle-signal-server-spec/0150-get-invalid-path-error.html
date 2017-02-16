@@ -7,8 +7,8 @@
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Get method test: success case 01</p>
-<p> Get Signal.Drivetrain.Transmission.Speed</p>
+<p> Get method test: error case 01: invalid path</p>
+<p> Get Signal.Drivetrain.Transmission.xxxxxx</p>
 <p> (* Run VSSS server before starting test) </p>
 
 <h3>
@@ -16,36 +16,33 @@
 </h3>
 
 <script>
-var t = async_test("Get method success 01");
+var t = async_test("Get method error: invalid data path");
 
-var vehicle  = new WebSocket(VISS_URL);
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
   // request a signal
   var reqId = "reqid-12345";
-  var path = "Signal.Drivetrain.Transmission.Speed";
+  var path = "Signal.Drivetrain.Transmission.xxxxxx";
 
   // process messages from the server
   vehicle.onmessage = t.step_func(
     function(event) {
       var msg = JSON.parse(event.data);
 
-      if (isGetSuccessResponse(reqId, msg)) {
-        addLogMessage("<br>Get response received. value = " + msg.value);
-        addLogSuccess("Get method successed");
-        assert_true(true, "OK: "+path + ": value = " + msg.value);
+      if( isGetErrorResponse(reqId, msg) ) {
+        addLogMessage("getErrorResponse received. err_number = " + msg.error.number);
+        addLogSuccess("getErrorResponse returned as expected");
+        assert_true(true, "OK: error as expected: Err: "+msg.error.number+":"+msg.error.reason +", path = " +path);
       } else {
-        addLogFailure("Get method failed");
+        addLogFailure("getErrorResponse was expected");
       }
-
       t.step_timeout(function() {
         vehicle.close();
         t.done();
       }, TIME_FINISH_WAIT);
-
     }
   );
-
   // in case server doesn't return response
   t.step_timeout(function() {
     addLogFailure("Fishish by timeout");
@@ -54,9 +51,8 @@ vehicle.onopen = function() {
       vehicle.close();
       t.done();
     }, TIME_FINISH_WAIT);
-  }, 2000);
-
-  addLogMessage("<br>Send get request: path="+path);
+  }, TIME_OUT_TIME);
+  addLogMessage("Send get request: path="+path);
   vehicle.send('{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
 }
 </script>

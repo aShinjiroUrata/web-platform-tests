@@ -1,0 +1,100 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: unsubscribe() tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Unsubscribe Test: End a subscription</h3>
+<h3> Success Condition: Execute unsubscribe and receive unsubscribeSuccessResponse</h3>
+<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("Unsubscribe Test: End a subscription");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var PH_START            = 0;
+var PH_SENT_SUBSCRIBE   = 1;
+var PH_SUBSCRIBED       = 2;
+var PH_SENT_UNSUBSCRIBE = 3;
+var PH_UNSUBSCRIBED     = 4;
+var PH_END              = 5;
+
+var NOTIFICATION_COUNT  = 3;
+
+vehicle.onopen = function() {
+  // request a signal
+  var reqId = "reqid-0240";
+  var path = "Signal.Drivetrain.Transmission.Speed";
+  var notifCount = 0;
+  var phase = PH_START;
+  var subId = null;
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var msg = JSON.parse(event.data);
+
+    // subscirbe has sent
+    if (phase == PH_START) {
+      // nothing to do
+    } else if (phase == PH_SENT_SUBSCRIBE) {
+      t.step_func(function() {
+        // wait for subscribe response
+        var res = isSubscribeSuccessResponse(reqId, msg);
+        if (res) {
+          addLogMessage("subscribeSuccessResponse received. subscribeId = " + msg.subscriptionId);
+          subId = msg.subscriptionId
+
+          // Test successed. Send unsubscribe
+          addLogMessage("Send unsubscribe request");
+          vehicle.send('{"action":"unsubscribe"'
+                        +' ,"subscriptionId":"'+subId+'"'
+                        +' ,"requestId":"'+reqId+'"'
+                        +'}');
+          phase = PH_SENT_UNSUBSCRIBE;
+        } else if (isSubscribeErrorResponse(reqId, msg)) {
+          helper_terminate_failure("subscribeErrorResponse received. test failed.");
+          phase = PH_END;
+        }
+      })();
+    } else if (phase == PH_SENT_UNSUBSCRIBE) {
+      t.step_func(function() {
+        // wait for unsubscribe response
+        var res = isUnsubscribeSuccessResponse(reqId, subId, msg);
+        assert_true(res, "True if unsubscribeSuccessResponse received.");
+
+        if (res) {
+          // unsubscibe success
+          phase = PH_UNSUBSCRIBED;
+          helper_terminate_success("unsubscribeSuccessResponse received");
+        } else if (isUnsubscribeErrorResponse(reqId, subId, msg)) {
+          // unsubscibe error
+          // Test is already success. Terminate anyway
+          helper_terminate_failure("unsubscribeErrorResponse received");
+        }
+      })();
+    } else if (phase == PH_UNSUBSCRIBED) {
+      // nothing to do
+    }
+  }
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    if (phase < PH_SUBSCRIBED) {
+      helper_terminate_failure("Finish by timeout");
+    }
+  }, TIME_OUT_TIME);
+
+  addLogMessage("Send subscribe request: path="+path);
+  vehicle.send('{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  phase = PH_SENT_SUBSCRIBE;
+}
+</script>
+
