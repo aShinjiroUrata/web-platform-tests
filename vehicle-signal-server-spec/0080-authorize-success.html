@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: authorize() tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Authorize test: authorize() success case </h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("authorize() success case");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+vehicle.onopen = function() {
+  // request a signal
+  var reqId = "reqid-12345";
+  var dummyToken = "aaaaaaaaaa";
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var msg = JSON.parse(event.data);
+    t.step_func(function() {
+
+      if (isAuthorizeSuccessResponse(reqId, msg)) {
+        //assert_true(true, "Get response received. value = " + msg.value);
+        helper_terminate_success("authorizeSuccessResponse received. Right behevior");
+      } else if (isAuthorizeErrorResponse(reqId, msg)) {
+        helper_terminate_failure("Get method failed. Wrong behavior");
+      }
+
+    })();
+  }
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    helper_terminate_failure("Fishish by timeout");
+  }, TIME_OUT_TIME);
+
+  addLogMessage("Send authorize request: tokens=" + dummyToken);
+  vehicle.send('{"action":"authorize","tokens":"'+ dummyToken +'" ,"requestId":"'+reqId+'"}');
+}
+</script>

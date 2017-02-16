@@ -7,45 +7,47 @@
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Get method test: success case 01</p>
-<p> Get Signal.Drivetrain.Transmission.Speed</p>
-<p> (* Run VSSS server before starting test) </p>
+<h3> Set test: Set with invalid path. Error case </h3>
+<h3> Set Signal.Drivetrain.Transmission.xxxxxx </h3>
 
 <h3>
 <div id="log"></div>
 </h3>
 
 <script>
-var t = async_test("Get method success 01");
 
-var vehicle  = new WebSocket(VISS_URL);
+var t = async_test("Set test: Set with invalid path. Error case.");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
   // request a signal
-  var reqId = "reqid-12345";
-  var path = "Signal.Drivetrain.Transmission.Speed";
+  var reqId_1 = "reqid-0170";
+  var path = "Signal.Drivetrain.Transmission.xxxx";
+  var val = 5; //Gear value: -1 to 15
 
   // process messages from the server
   vehicle.onmessage = t.step_func(
     function(event) {
       var msg = JSON.parse(event.data);
+      var res;
 
-      if (isGetSuccessResponse(reqId, msg)) {
-        addLogMessage("<br>Get response received. value = " + msg.value);
-        addLogSuccess("Get method successed");
-        assert_true(true, "OK: "+path + ": value = " + msg.value);
+      // if requestId matches and msg.value has value, judge as OK.
+      if (isSetErrorResponse(reqId_1, msg)) {
+        // try get for verification
+        res = true;
+        addLogSuccess("setErrorResponse received. err=" + msg.error.number);
       } else {
-        addLogFailure("Get method failed");
+        res = false;
+        addLogFailure("setErrorResponse not received.");
       }
-
       t.step_timeout(function() {
+        assert_true(res, "OK: "+path + ": value = " + msg.value);
         vehicle.close();
         t.done();
       }, TIME_FINISH_WAIT);
-
     }
   );
-
   // in case server doesn't return response
   t.step_timeout(function() {
     addLogFailure("Fishish by timeout");
@@ -56,7 +58,10 @@ vehicle.onopen = function() {
     }, TIME_FINISH_WAIT);
   }, TIME_OUT_TIME);
 
-  addLogMessage("<br>Send get request: path="+path);
-  vehicle.send('{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  addLogMessage("Send set request: path="+path+", value="+val);
+  vehicle.send('{"action":"set","path":"'+ path+'"'
+              + ' ,"value":"'+val+'"'
+              + ' ,"requestId":"'+reqId_1+'"'
+              + '}');
 }
 </script>

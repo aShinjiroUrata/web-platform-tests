@@ -7,8 +7,8 @@
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Set method test: error case 01 </p>
-<p> Set Signal.Drivetrain.Transmission.xxxxxx </p>
+<p> Set method test: success case 01 </p>
+<p> Set Signal.Drivetrain.Transmission.Gear </p>
 <p> (* Run VSSS server before starting test) </p>
 
 <h3>
@@ -17,46 +17,50 @@
 
 <script>
 
-var t = async_test("Set method error: invalid data path");
+var t = async_test("Set method success 01");
 
-var vehicle  = new WebSocket(VISS_URL);
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
   // request a signal
   var reqId_1 = "reqid-00001";
-  var path = "Signal.Drivetrain.Transmission.xxxx";
+  var reqId_2 = "reqid-00002";
+  var path = "Signal.Drivetrain.Transmission.Gear";
   var val = 5; //Gear value: -1 to 15
 
   // process messages from the server
   vehicle.onmessage = t.step_func(
     function(event) {
       var msg = JSON.parse(event.data);
-      var res;
 
       // if requestId matches and msg.value has value, judge as OK.
-      if (isSetErrorResponse(reqId_1, msg)) {
+      if (isSetSuccessResponse(reqId_1, msg)) {
         // try get for verification
-        res = true;
-        addLogSuccess("setErrorResponse received. err=" + msg.error.number);
-      } else {
-        res = false;
-        addLogFailure("setErrorResponse not received.");
+        addLogMessage("<br>Received set response");
+        addLogMessage("<br>Send get request for verification");
+        vehicle.send('{"action":"get","path":"'+ path+'"'
+                    + ' ,"requestId":"'+reqId_2+'"'
+                    + '}');
       }
-      t.step_timeout(function() {
-        assert_true(res, "OK: "+path + ": value = " + msg.value);
-        vehicle.close();
-        t.done();
-      }, TIME_FINISH_WAIT);
+      if (isGetSuccessResponse(reqId_2, msg)) {
+        addLogMessage("<br>Get response received. value = " + msg.value);
+        if (msg.value === val) {
+          addLogSuccess("Set method successed");
+        } else {
+          addLogFailure("Set method failed");
+        }
+        t.step_timeout(function() {
+          assert_true(msg.value === val, "OK: "+path + ": value = " + msg.value);
+          vehicle.close();
+          t.done();
+        }, TIME_FINISH_WAIT);
+      }
     }
   );
   // in case server doesn't return response
   t.step_timeout(function() {
-    addLogFailure("Fishish by timeout");
-    t.step_timeout(function() {
-      assert_true(false);
-      vehicle.close();
-      t.done();
-    }, TIME_FINISH_WAIT);
+    addLogMessage("Fishish by timeout");
+    t.done();
   }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send set request: path="+path+", value="+val);

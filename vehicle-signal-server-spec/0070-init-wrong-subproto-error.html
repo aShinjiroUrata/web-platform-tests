@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Information Service Spec Test: initialize test </title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Initialize test: 'wss' connection test with wrong sub-protocol</h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var WSS_URL = "wss://"+VISS_HOST+":"+VISS_PORT;
+var WRONG_SUBPROTO = "aaaa";
+var t = async_test("Initialize: wss connection test");
+
+//var vehicle  = new WebSocket(WSS_URL, VISS_SUBPROTO);
+var vehicle  = new WebSocket(WSS_URL, WRONG_SUBPROTO);
+
+vehicle.onopen = function() {
+  // show success
+  helper_terminate_failure("connected with " + WSS_URL + " :sub-protocol= "+WRONG_SUBPROTO+" Wrong behaviro");
+}
+
+vehicle.onerror = function() {
+  // show error
+  helper_terminate_success("could not connect with " + WSS_URL + " :sub-protocol= "+WRONG_SUBPROTO + " Correct behavior");
+}
+
+// in case server doesn't return response
+t.step_timeout(function() {
+  helper_terminate_failure("Fishish by timeout");
+}, TIME_OUT_TIME);
+
+</script>

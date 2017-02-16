@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Information Service Spec Test: initialize test </title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Initialize test: connect with 'ws' fails </h3>
+<h3> Success Condition: try 'ws' connection and failed to connect </h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var WS_URL = "ws://"+VISS_HOST+":"+VISS_PORT;
+var t = async_test("Initialize: wss connection test");
+
+var vehicle  = new WebSocket(WS_URL, VISS_SUBPROTO);
+
+vehicle.onopen = function() {
+  // show success
+  helper_terminate_failure("connected with " + WS_URL + ". Wrong behavior.");
+}
+
+vehicle.onerror = function() {
+  // show error
+  helper_terminate_success("could not connect with " + WS_URL + ". Correct behavior." );
+}
+
+// in case server doesn't return response
+t.step_timeout(function() {
+  helper_terminate_failure("Fishish by timeout");
+}, TIME_OUT_TIME);
+
+</script>

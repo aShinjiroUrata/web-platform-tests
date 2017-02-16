@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: getVSS tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> getVSS test: getVSS with wildcard path. success case </h3>
+<h3> Path = 'Signal.Drivetrain.InternalCombustionEngine.*'</h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("getVSS with wildcard path. success case");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+vehicle.onopen = function() {
+  // request a signal
+  var reqId = "reqid-0110";
+  var path = "Signal.Drivetrain.InternalCombustionEngine.*";
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var msg = JSON.parse(event.data);
+    t.step_func(function() {
+
+      if (isVssSuccessResponse(reqId, msg)) {
+        //TODO: Does returned vss really match with the wildcard path?
+
+        var vssStr = JSON.stringify(msg.vss).substr(1,3000);
+        helper_terminate_success("getVSS response received.");
+        addLogMessage("vss = " + vssStr);
+      } else if (isVssErrorResponse(reqId, msg)) {
+        helper_terminate_failure("getVSS method failed");
+      }
+    })();
+  }
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    helper_terminate_failure("Fishish by timeout");
+  }, TIME_OUT_TIME);
+
+  addLogMessage("Send getVSS request. path = " + path);
+  vehicle.send('{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+}
+</script>

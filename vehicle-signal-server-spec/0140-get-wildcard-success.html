@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: get tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Get test: get with wildcard path. Success case </h3>
+<h3> Path = Signal.Drivetrain.Transmission.*</h3>
+  
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("Get with wildcard path. Success case");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+vehicle.onopen = function() {
+  // request a signal
+  var reqId = "reqid-0140";
+  var path = "Signal.Drivetrain.Transmission.*";
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var msg = JSON.parse(event.data);
+    t.step_func(function() {
+
+      if (isGetSuccessResponse(reqId, msg)) {
+        //TODO: Returned value is correct response from the request? How to verify?
+
+        assert_true(true, "Get response received. value = " + msg.value);
+        helper_terminate_success("Get response received. value = " + msg.value);
+      } else {
+        helper_terminate_failure("Get method failed");
+      }
+
+    })();
+  }
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    helper_terminate_failure("Fishish by timeout");
+  }, TIME_OUT_TIME);
+
+  addLogMessage("Send get request: path="+path);
+  vehicle.send('{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+}
+</script>
