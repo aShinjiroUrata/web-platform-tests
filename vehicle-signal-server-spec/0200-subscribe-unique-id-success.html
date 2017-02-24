@@ -1,0 +1,138 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Information Service Spec Test: Subscribe() Test</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Subscribe Test: Unique subscriptionID</h3>
+<h3> Success Condition: There is no set of two subscriptionIDs with same value</h3>
+<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("Subscribe test: Unique subscriptionID");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var PH_START            = 0;
+var PH_SENT_SUBSCRIBE   = 1;
+var PH_SUBSCRIBED       = 2;
+var PH_SENT_UNSUBSCRIBE = 3;
+var PH_UNSUBSCRIBED     = 4;
+var PH_END              = 5;
+
+var NOTIFICATION_COUNT  = 3;
+
+var reqId = [];
+var subId = [];
+var idnum_base = 200;
+var iMax = 10; // 10 is appropriate?
+
+var path = "Signal.Drivetrain.Transmission.Speed";
+var notifCount = 0;
+var phase = PH_START;
+
+vehicle.onopen = function() {
+  // request a signal
+  for (var i=0; i<iMax; i++) {
+    reqId[i] = "reqid-0" + idnum_base+i;
+    subId[i] = null;
+  }
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var msg = JSON.parse(event.data);
+
+    if (phase == PH_START) {
+      // nothing to do
+    } else if (phase == PH_SENT_SUBSCRIBE) {
+      t.step_func(function() {
+        // wait for subscribe response
+        var res = isSubscribeSuccessResponse("", msg);
+        assert_true(res, "True if subscribeSuccessResponse received.");
+
+        if (res) {
+          for (var i=0; i<iMax; i++) {
+            if (msg.requestId === reqId[i]) {
+              subId[i] = msg.subscriptionId;
+              addLogMessage("subscribeSuccessResponse for reqId["+i+"] received. subscribeId = "
+                            + subId[i]);
+            }
+          }
+
+        } else if (isSubscribeErrorResponse("", msg)) {
+          helper_terminate_failure("subscribeErrorResponse received. test failed.");
+          //TODO: unsubscribeAll
+          unsubscribeAllRequest(subId);
+          phase = PH_END;
+        }
+
+        // check if all the subscribe() response received
+        var passed = subId.every(function(element, index, array) { return (element != null); });
+        if (passed) {
+          //all subscribe() received subscribeSuccessResponse
+          phase = PH_SUBSCRIBED;
+          //TODO: unsubscribeAll
+          unsubscribeAllRequest(subId);
+
+          var subId0 = subId[0];
+          var subIdRest = subId.slice(1);
+          // check if no subId is duplicate of subId0
+          var success = subIdRest.every(function(element, index, array) { 
+            var idx = index + 1;
+            if (element === subId0) {
+              addLogMessage("subId["+ idx +"] == subId0");
+              return false;
+            } else {
+              addLogMessage("subId["+ idx +"] != subId0");
+              return true;
+            }
+          });
+          if (success) {
+            helper_terminate_success("There is no duplicated subId of<br> subId[0] = " + subId[0]);
+          phase = PH_END;
+          }
+        }
+
+      })();
+    } else if (phase == PH_SUBSCRIBED) {
+      addLogMessage("json = " + event.data);
+    } else if (phase == PH_SENT_UNSUBSCRIBE) {
+      addLogMessage("json = " + event.data);
+    } else if (phase == PH_UNSUBSCRIBED) {
+      addLogMessage("json = " + event.data);
+      // nothing to do
+    }
+  }
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    if (phase < PH_SUBSCRIBED) {_
+      helper_terminate_failure("Finish by timeout");
+    }
+  }, TIME_OUT_TIME);
+
+  addLogMessage("Send subscribe request: path="+path);
+  phase = PH_SENT_SUBSCRIBE;
+  for (var i=0; i< iMax; i++) {
+    vehicle.send('{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+ reqId[i] +'"}');
+  }
+
+}
+
+function unsubscribeAllRequest(_subId) {
+  var reqId_base = 1000;
+  for (var i=0; i<iMax; i++) {
+    vehicle.send('{"action":"unsubscribe","subscriptionId":"'+ _subId[i] +'" ,"requestId":"'
+                 + (reqId_base + i).toString(10) +'"}');
+    addLogMessage("unsubscribe sent with subId["+i+"] = " + _subId[i] );
+  }
+}
+</script>
+

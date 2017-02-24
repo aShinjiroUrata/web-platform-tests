@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Information Service Spec Test: Subscribe() Test</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<h3> Subscribe Test: Filter:Range test</h3>
+<h3> Success Condition: subscribe with filter=Range</h3>
+<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("Subscribe test: subscribe with filter=Range");
+
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var PH_START            = 0;
+var PH_SENT_SUBSCRIBE   = 1;
+var PH_SUBSCRIBED       = 2;
+var PH_SENT_UNSUBSCRIBE = 3;
+var PH_UNSUBSCRIBED     = 4;
+var PH_END              = 5;
+
+var NOTIFICATION_COUNT  = 5;
+
+var reqId = "reqid-0290";
+var path = "Signal.Drivetrain.Transmission.Speed";
+var phase = PH_START;
+var subId = null;
+
+var notifCount = 0;
+var notif = [];
+
+var intervalTime   = 1000; //msec
+var intervalMargin = 1;    //%
+var range_above    = 100;  //km/h
+var range_below    = 20;   //km/h
+var minChangeVal   = 5;    //km/h
+
+var filter_interval = '{"interval":' + intervalTime + '}';
+var filter_range = '{"range": {"above":' + range_above + ', "below":'+range_below + '}}';
+var filter_minChange = '{"range": {"minChange":' + minChangeVal + '}';
+
+vehicle.onopen = function() {
+
+  // process messages from the server
+  vehicle.onmessage = function(event) {
+    var ts = getTimestamp();
+    var msg = JSON.parse(event.data);
+
+    if (phase == PH_START) {
+      // nothing to do
+    } else if (phase == PH_SENT_SUBSCRIBE) {
+      t.step_func(function() {
+        // wait for subscribe response
+        var res = isSubscribeSuccessResponse(reqId, msg);
+        if (res) {
+          addLogMessage("subscribeSuccessResponse received. subscribeId = " + msg.subscriptionId);
+          subId = msg.subscriptionId
+          phase = PH_SUBSCRIBED;
+        } else if (isSubscribeErrorResponse(reqId, msg)) {
+          helper_terminate_failure("subscribeErrorResponse received. test failed.");
+          phase = PH_END;
+        }
+      })();
+    } else if (phase == PH_SUBSCRIBED) {
+      t.step_func(function() {
+        // wait subscriptionNotification
+        var res = isSubscriptionNotification(subId, msg);
+        if (res){
+          if (notifCount > NOTIFICATION_COUNT) {
+            // do unsubscribe
+            addLogMessage("Send unsubscribe request");
+            vehicle.send('{"action":"unsubscribe"'
+                          +' ,"subscriptionId":"'+subId+'"'
+                          +' ,"requestId":"'+reqId+'"'
+                          +'}');
+            phase = PH_SENT_UNSUBSCRIBE;
+          }
+          notif[notifCount] = {};
+          notif[notifCount].json = msg;
+          notif[notifCount].timestamp = ts;
+          addLogMessage("SubscriptionNotification received. value = " + msg.value + ", timestamp = " + ts);
+          notifCount++;
+        } else if (isSubscriptionNotificationError(subId, msg)) {
+          helper_terminate_failure("SubscriptionNotificationError received. Abort test.");
+          phase = PH_END;
+        }
+      })();
+    } else if (phase == PH_SENT_UNSUBSCRIBE) {
+      t.step_func(function() {
+        // wait for unsubscribe response
+        var res = isUnsubscribeSuccessResponse(reqId, subId, msg);
+        assert_true(res, "True if unsubscribeSuccessResponse received.");
+        if (res) {
+          // unsubscibe success
+          addLogMessage("subscribe/unsubscribe successed");
+        } else if (isUnsubscribeErrorResponse(reqId, subId, msg)) {
+          // unsubscribe error
+          // Test has been success already. Terminate anyway.
+          addLogMessage("unsubscribeErrorResponse received");
+        }
+        phase = PH_UNSUBSCRIBED;
+
+        var flgSuccess = true;
+        // check the notification result
+        for (var i=0; i<notifCount; i++) {
+          var res = verifyRange(notif[i]);
+          if (res == false)
+            flgSuccess = false;
+        }
+        if (flgSuccess == true) {
+          helper_terminate_success("All the notification satisfied filter condition");
+        } else {
+          helper_terminate_failure("Some notification didn't satisfy filter condition");
+        }
+
+      })();
+    } else if (phase == PH_UNSUBSCRIBED) {
+      //nothing to do
+    }
+  }
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    if (phase < PH_SUBSCRIBED) {_
+      helper_terminate_failure("Finish by timeout");
+    }
+  }, TIME_OUT_TIME
+  );
+
+  addLogMessage("Send subscribe request: path= "+path+", filter= " + filter_range+ "<br>");
+  vehicle.send('{"action":"subscribe","path":"'+ path +'"'
+                +',"requestId":"'+reqId+'"'
+                +',"filters":'+filter_range+'}');
+ 
+  phase = PH_SENT_SUBSCRIBE;
+}
+
+// verify Range
+function verifyRange( _notif) {
+  var val = _notif.json.value;
+  if ( val > range_above) {
+    addLogFailure("Range_above:"+ range_above +" < value:"+ val);
+    return false;
+  } else 
+  if ( val < range_below) {
+    addLogFailure("Range_below:"+ range_below +" > value:"+ val);
+    return false;
+  } else {
+    addLogSuccess("Range_above:"+ range_above +" > value:"+ val +" > Range_below:"+range_below);
+    return true;
+  }
+}
+
+</script>
+
