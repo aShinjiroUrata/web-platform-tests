@@ -3,6 +3,15 @@
 <title>Vehicle Signal Server Spec Test: unsubscribe tests</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
 
+<!--
+Test Senario:
+1. Subscribe three datapoints.
+2. If all subscribe succeeded, send 'unsubscribeAll' request.
+3. Successfull response of 'unsubscribeAll' should arrive.
+4. Wait for certain time and confirm all the subscriptions are unsubscribed
+and no more 'subscriptionNotification' arrive.
+-->
+
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
@@ -32,8 +41,8 @@ var PH_END              = 5;
 
 var NOTIFICATION_COUNT  = 3;
 
-var TIME_MORATRIUM = 3000;
-var TIME_CONFIRM_UNSUBSCRIBE = 4000;
+var TIME_MORATRIUM = 2000;
+var TIME_CONFIRM_UNSUBSCRIBEALL = 2000;
 
 vehicle.onopen = function() {
   // request a signal
@@ -87,8 +96,8 @@ vehicle.onopen = function() {
         if (subSuccess1 && subSuccess2 && subSuccess3) {
           addLogMessage("All subscribe succeeded.");
           addLogMessage("Send unsubscribeAll request");
-          vehicle.send('"action":"unsubscribeAll"'
-                        +' ,"requestId":"'+reqId_unsubAll+'"');
+          vehicle.send('{"action":"unsubscribeAll"'
+                        +' ,"requestId":"'+reqId_unsubAll+'"}');
           phase = PH_SENT_UNSUBSCRIBE;
 
           // Set timeout for unsubscribeAll request
@@ -148,7 +157,6 @@ vehicle.onopen = function() {
       })();
     }
   }
-
   addLogMessage("Send subscribe request: path1="+ path1);
   vehicle.send('{"action":"subscribe","path":"'+ path1 +'" ,"requestId":"'+reqId1+'"}');
 

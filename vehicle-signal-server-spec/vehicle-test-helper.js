@@ -8,7 +8,7 @@ var VISS_SUBPROTO = "wvss1.0";
 var VISS_URL = "ws://"+VISS_HOST+":"+VISS_PORT
 
 var TIME_FINISH_WAIT = 500; // wait time to let human see result message
-var TIME_OUT_TIME = 3000;    // time to forcefully terminate the test
+var TIME_OUT_TIME = 5000;    // time to forcefully terminate the test
 
 // === get helper ===
 function isAuthorizeSuccessResponse( _reqId, _inJson) {
@@ -226,7 +226,7 @@ function isUnsubscribeErrorResponse( _reqId, _subId, _inJson) {
 }
 function isUnsubscribeAllSuccessResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
-  if (_inJson.action === "unsubscribe" &&
+  if (_inJson.action === "unsubscribeAll" &&
       _inJson.requestId === _reqId &&
       _inJson.subscriptionId === null &&
       _inJson.error === undefined &&
