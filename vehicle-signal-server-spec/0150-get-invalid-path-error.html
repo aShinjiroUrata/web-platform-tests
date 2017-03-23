@@ -7,7 +7,7 @@
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Get method test: error case 01: invalid path</p>
+<p> Get method test: error case: invalid path</p>
 <p> Get Signal.Drivetrain.Transmission.xxxxxx</p>
 <p> (* Run VSSS server before starting test) </p>
 
@@ -23,7 +23,7 @@ var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 vehicle.onopen = function() {
   // request a signal
   var reqId = "reqid-12345";
-  var path = "Signal.Drivetrain.Transmission.xxxxxx";
+  var path = "Signal.Drivetrain.Transmission.InvalidPath";
 
   // process messages from the server
   vehicle.onmessage = t.step_func(
