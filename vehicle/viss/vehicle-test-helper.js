@@ -1,4 +1,4 @@
-var VSSS_HOST = "xx.xx.xx.xx";
+var VISS_HOST = "xx.xx.xx.xx";
 
 var VISS_PORT = "3000";
 var VISS_PROTOCOL = "ws://"; // select ws:// or wss:// according to your VISS server
