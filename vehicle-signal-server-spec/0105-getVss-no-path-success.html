@@ -28,8 +28,7 @@ vehicle.onopen = function() {
     var msg = JSON.parse(event.data);
     t.step_func(function() {
       if (isVssSuccessResponse(reqId, msg)) {
-        //TODO: Does returned vss really match with the wildcard path?
-
+        //TODO: response really matches with request?
         var vssStr = JSON.stringify(msg.vss).substr(1,3000);
         helper_terminate_success("getVSS response received.");
         addLogMessage("vss = " + vssStr);

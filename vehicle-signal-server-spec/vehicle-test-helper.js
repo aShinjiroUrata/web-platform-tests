@@ -1,13 +1,13 @@
-//var VSSS_HOST = "xx.xx.xx.xx";
-var VISS_HOST = "127.0.0.1";
+var VSSS_HOST = "xx.xx.xx.xx";
 
 var VISS_PORT = "3000";
+var VISS_PROTOCOL = "ws://"; // select ws:// or wss:// according to your VISS server
 var VISS_SUBPROTO = "wvss1.0";
 
 //most tests uses this as URL to VISS server
-var VISS_URL = "ws://"+VISS_HOST+":"+VISS_PORT
+var VISS_URL = VISS_PROTOCOL + VISS_HOST + ":" + VISS_PORT
 
-var TIME_FINISH_WAIT = 500; // wait time to let human see result message
+var TIME_FINISH_WAIT = 500; // wait time to let human see test result in test window
 var TIME_OUT_TIME = 5000;    // time to forcefully terminate the test
 
 // === get helper ===

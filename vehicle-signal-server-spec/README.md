@@ -1,65 +1,65 @@
-## W3C Vehicle Information Service Specification Test Cases
+# W3C Vehicle API test case README
+last update: March 22, 2017
 
-### General information
+#### Install W3C web platform test from a specific fork
 
-TIMEOUT setting
+1. Clone W3C web platform test from below forked repository and branch.
+```
+$ git clone -b dev-urata-vsss-test https://github.com/aShinjiroUrata/web-platform-tests
+$ git submodule update --init --recursive
+```
 
-### 0050-init-success.html
+2. Set up web platform test by following README.md instruction.<br>(edit /etc/hosts file as writtein in README.md as well)
+```
+web-platform-tests/README.md
+```
 
-### 0060-init-error.html
+3. Start W3C web platform test
+```
+$ ./serve
+```
 
-### 0070-init-wrong-subproto-error.html
+4. Verify web platfrom test is working<br>
+Open web platform test WebUI by visiting below URL via browser.<br>
+(need to wait for a few minutes until test runner finish enumeration of test cases.)
+```
+http://web-platform.test:8000/tools/runner/index.html
+```
 
-### 0080-authorize-success.html
+#### Install VISS prototype as a trial environment
 
-### 0090-authorize-error.html
+1. Clone sources from the repository
+```
+$ git clone https://github.com/aShinjiroUrata/vehicle-signal-server-spec
+$ git branch master
+```
+2. Set up by VISS prototype by following README.md instruction
+```
+vehicle-signal-server-spec/README.md
+```
+3. Verify VISS prototype is working by following README.md instruction
 
-### 0100-getVss-success.html
+#### Try Vehicle API test
 
-### 0105-getVss-no-path-success.html
+1. Configure VISS server information in Vehicle API test's configuration file.
+```
+$ vi web-platform-tests/vehicle-signal-server-spec/vehicle-test-helper.js
+```
+Update 'VISS_HOST','VISS_PORT' according to VISS prototype's setting.<br>
+(set the same value with `vehicle-signal-server-spec/svr_config.js` )<br>
+Edit 'VISS_PROTOCOL' to appropriate value.<br>
+In case of VISS prototype, use 'ws://' so far. (To be changed later)<br>
 
-### 0110-getVss-wildcard-success.html
+2. Restart W3C test suites' serve command
 
-### 0120-getVss-incorrect-error.html
+3. Open web platform test WebUI again.
 
-### 0130-get-success.html
+4. Select vehicle api test by entering 'vehicle' in 'Run tests under path' text box on WebUI.<br>
+   Then push 'Start' button and the test cases should run.
 
-### 0140-get-wildcard-success.html
+#### Test different VISS server implementation
 
-### 0150-get-invalid-path-error.html
+1. Update 'VISS_HOST','VISS_PORT' and 'VISS_PROTOCOL' in `vehicle-test-helper.js` according to the target VISS server
 
-### 0160-set-success.html
-
-### 0170-set-error.html
-
-### 0180-subscribe-success.html
-
-### 0190-subscribe-notification-success.html
-
-### 0200-subscribe-unique-id-success.html
-
-### 0210-subscribe-error.html
-
-### 0240-unsubscribe-success.html
-
-### 0250-unsubscribe-error.html
-
-### 0260-unsubscribeall-success.html
-
-After receiving success response of `unsubscribeAll`,
- confirm all subscriptions are really unsubscribed by
- watching no `subscriptionNotification` will be returned
- for a certain time.
-Adjust the waiting time if it is too short or too long.
-
-### 0280-subscribe-branch-error.html
-
-### 0290-subscribe-filter-interval-success.html
-
-### 0300-subscribe-filter-range-success.html
-
-### 0310-subscribe-filter-minchange-success.html
-
-### 0320-subscribe-filter-mixed-success.html
-
+2. Restart W3C test suite and try the Vehicle API test with above process
 
