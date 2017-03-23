@@ -3,6 +3,8 @@ last update: March 22, 2017
 
 #### Install W3C web platform test from a specific fork
 
+Install procedure is standard one as written in web-platform-tests/README.md.
+
 1. Clone W3C web platform test from below forked repository and branch.
 ```
 $ git clone -b dev-urata-vsss-test https://github.com/aShinjiroUrata/web-platform-tests
@@ -30,12 +32,12 @@ http://web-platform.test:8000/tools/runner/index.html
 
 1. Clone sources from the repository
 ```
-$ git clone https://github.com/aShinjiroUrata/vehicle-signal-server-spec
+$ git clone https://github.com/aShinjiroUrata/vehicle-information-service-spec
 $ git branch master
 ```
 2. Set up by VISS prototype by following README.md instruction
 ```
-vehicle-signal-server-spec/README.md
+vehicle-information-service-spec/README.md
 ```
 3. Verify VISS prototype is working by following README.md instruction
 
@@ -43,7 +45,7 @@ vehicle-signal-server-spec/README.md
 
 1. Configure VISS server information in Vehicle API test's configuration file.
 ```
-$ vi web-platform-tests/vehicle-signal-server-spec/vehicle-test-helper.js
+$ vi web-platform-tests/vehicle/viss/vehicle-test-helper.js
 ```
 Update 'VISS_HOST','VISS_PORT' according to VISS prototype's setting.<br>
 (set the same value with `vehicle-signal-server-spec/svr_config.js` )<br>
@@ -54,7 +56,7 @@ In case of VISS prototype, use 'ws://' so far. (To be changed later)<br>
 
 3. Open web platform test WebUI again.
 
-4. Select vehicle api test by entering 'vehicle' in 'Run tests under path' text box on WebUI.<br>
+4. Select vehicle api test by entering 'vehicle/viss' in 'Run tests under path' text box on WebUI.<br>
    Then push 'Start' button and the test cases should run.
 
 #### Test different VISS server implementation
