@@ -20,8 +20,8 @@ var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
   // request a signal
-  var reqId = "reqid-12345";
-  var dummyToken = ""; //empty token
+  var reqId = "reqid-0090";
+  var invalid_token = TOKEN_INVALID; //empty token
 
   // process messages from the server
   vehicle.onmessage = function(event) {
@@ -43,7 +43,9 @@ vehicle.onopen = function() {
     helper_terminate_failure("Fishish by timeout");
   }, TIME_OUT_TIME);
 
-  addLogMessage("Send authorize request: tokens=" + dummyToken);
-  vehicle.send('{"action":"authorize","tokens":"'+ dummyToken +'" ,"requestId":"'+reqId+'"}');
+  addLogMessage("Send authorize request: tokens=" + invalid_token);
+  var tokens = JSON.stringify({"authorization"     : invalid_token,
+                "www-vehicle-device": invalid_token});
+  vehicle.send('{"action":"authorize","tokens":'+ tokens +' ,"requestId":"'+reqId+'"}');
 }
 </script>

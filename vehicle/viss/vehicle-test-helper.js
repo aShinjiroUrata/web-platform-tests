@@ -1,14 +1,27 @@
-var VISS_HOST = "xx.xx.xx.xx";
+// === General setting ===
+// var VISS_HOST = "xx.xx.xx.xx";
+var VISS_HOST = "10.5.162.79";
 
 var VISS_PORT = "3000";
 var VISS_PROTOCOL = "ws://"; // select ws:// or wss:// according to your VISS server
 var VISS_SUBPROTO = "wvss1.0";
 
-//most tests uses this as URL to VISS server
+// most tests uses this as URL to VISS server
 var VISS_URL = VISS_PROTOCOL + VISS_HOST + ":" + VISS_PORT
 
 var TIME_FINISH_WAIT = 500; // wait time to let human see test result in test window
 var TIME_OUT_TIME = 5000;    // time to forcefully terminate the test
+
+// ==== for test 0080, 0090 (Authorize test) ====
+// Please replace with token strings those are valid/invalid for your VISS server implementation.
+var TOKEN_VALID   = "token_valid";
+var TOKEN_INVALID = "token_invalid";
+
+// === for test 0010, 0020, 0030, 0040 ===
+// Please configure a set of data path and action such that requires 'authorize' to do the action for the data path.
+var AUTH_ACCESS_PATH   = "Signal.Cabin.Door.Row1.Right.IsLocked";
+var AUTH_ACCESS_ACTION = "set"; // should be 'get' or 'set'
+var AUTH_ACCESS_VALUE  = true;  // necessary when AUTH_ACCESS_ACTION == set
 
 // === get helper ===
 function isAuthorizeSuccessResponse( _reqId, _inJson) {
@@ -298,6 +311,25 @@ function addLogFailure(_msg) {
   document.getElementById('log').innerHTML = msg;
 }
 
+function getUniqueReqId() { 
+  // create semi-uniquID (for implementation easyness) as timestamp(milli sec)+random string
+  // uniqueness is not 100% guaranteed.
+  var strength = 1000;
+  var uniq = new Date().getTime().toString(16) + Math.floor(strength*Math.random()).toString(16);
+  return "reqid-"+uniq;
+}
+var createTargetActionReq(_action, _path, _val) {
+  var reqJson = null;   
+  var reqId = getUniqueReqId();
+  if (_action == 'get') {
+    reqJson = '{"action":"get","path":"'+_path+'","requestId":"'+reqId+'"}';   
+  } else if (_action == 'set') {
+    reqJson = '{"action":"set","path":"'+_path+'","value":"'+_val+'","requestId":"'+reqId+'"}';  
+  }    
+  return reqJson;  
+}
+
+// === test suite helper ===
 function helper_terminate_normal( _msg ) {
   addLogMessage( _msg );
   t.step_timeout(function() {
