@@ -1,6 +1,5 @@
 // === General setting ===
-// var VISS_HOST = "xx.xx.xx.xx";
-var VISS_HOST = "10.5.162.79";
+var VISS_HOST = "127.0.0.1";
 
 var VISS_PORT = "3000";
 var VISS_PROTOCOL = "ws://"; // select ws:// or wss:// according to your VISS server
@@ -130,6 +129,42 @@ function isGetErrorResponse( _reqId, _inJson) {
   }
 }
 
+// === set helper ===
+function isSetSuccessResponse( _reqId, _inJson) {
+  // TODO: better to check with Json schema
+  if (_inJson.action === "set" &&
+      _inJson.requestId &&
+      _inJson.timestamp &&        //'timestamp' exists
+      _inJson.error == undefined) //'error' exists
+  {
+    if (_reqId === "" || _reqId === _inJson.requestId) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+function isSetErrorResponse( _reqId, _inJson) {
+  // TODO: better to check with Json schema
+  if (_inJson.action === "set" &&
+      _inJson.requestId &&
+      _inJson.timestamp &&      //'timestamp' exists
+      _inJson.error)            //'error' exists
+      //_inJson.error.number &&   //'error.number' exists
+      //_inJson.error.reason)     //'error.reason' exists
+  {
+    if (_reqId === "" || _reqId === _inJson.requestId) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 // === subscribe helper ===
 function isSubscribeSuccessResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
@@ -206,13 +241,17 @@ function isSubscriptionNotificationError( _subId, _inJson) {
 function isUnsubscribeSuccessResponse( _reqId, _subId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.action === "unsubscribe" &&
-      _inJson.requestId === _reqId &&
+      _inJson.requestId  &&
       _inJson.subscriptionId &&
       _inJson.error === undefined &&
       _inJson.timestamp)      //'timestamp' exists
   {
     if (_subId === "" || _subId === _inJson.subscriptionId) {
-      return true;
+      if (_reqId === "" || _reqId === _inJson.requestId) {
+        return true;
+      } else {
+        return false;
+      }
     } else {
       return false;
     }
@@ -223,13 +262,17 @@ function isUnsubscribeSuccessResponse( _reqId, _subId, _inJson) {
 function isUnsubscribeErrorResponse( _reqId, _subId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.action === "unsubscribe" &&
-      _inJson.requestId === _reqId &&
+      _inJson.requestId &&
       _inJson.subscriptionId &&
       _inJson.timestamp &&      //'timestamp' exists
       _inJson.error)          //'error' exists
   {
     if (_subId === "" || _subId === _inJson.subscriptionId){
-      return true;
+      if (_reqId === "" || _reqId === _inJson.requestId) {
+        return true;
+      } else {
+        return false;
+      }
     } else {
       return false;
     }
@@ -237,42 +280,22 @@ function isUnsubscribeErrorResponse( _reqId, _subId, _inJson) {
     return false;
   }
 }
+
+//TODO: Don't we need unsubscribeAll Error Response check function?
+
 function isUnsubscribeAllSuccessResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.action === "unsubscribeAll" &&
-      _inJson.requestId === _reqId &&
-      _inJson.subscriptionId === null &&
+      _inJson.requestId &&
+      _inJson.subscriptionId === undefined &&
       _inJson.error === undefined &&
       _inJson.timestamp)      //'timestamp' exists
   {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-// === set helper ===
-function isSetSuccessResponse( _reqId, _inJson) {
-  // TODO: better to check with Json schema
-  if (_inJson.action === "set" &&
-      _inJson.requestId === _reqId &&
-      _inJson.timestamp)        //'timestamp' exists
-  {
-    return true;
-  } else {
-    return false;
-  }
-}
-function isSetErrorResponse( _reqId, _inJson) {
-  // TODO: better to check with Json schema
-  if (_inJson.action === "set" &&
-      _inJson.requestId === _reqId &&
-      _inJson.timestamp &&      //'timestamp' exists
-      _inJson.error &&          //'error' exists
-      _inJson.error.number &&   //'error.number' exists
-      _inJson.error.reason)     //'error.reason' exists
-  {
-    return true;
+    if (_reqId === "" || _reqId === _inJson.requestId) {
+      return true;
+    } else {
+      return false;
+    }
   } else {
     return false;
   }
@@ -318,7 +341,8 @@ function getUniqueReqId() {
   var uniq = new Date().getTime().toString(16) + Math.floor(strength*Math.random()).toString(16);
   return "reqid-"+uniq;
 }
-var createTargetActionReq(_action, _path, _val) {
+
+function createRequestJson(_action, _path, _val) {
   var reqJson = null;   
   var reqId = getUniqueReqId();
   if (_action == 'get') {
@@ -330,26 +354,41 @@ var createTargetActionReq(_action, _path, _val) {
 }
 
 // === test suite helper ===
-function helper_terminate_normal( _msg ) {
+function helper_terminate_normal( _msg, _wsconn1, _wsconn2 ) {
   addLogMessage( _msg );
   t.step_timeout(function() {
-    vehicle.close();
+    if (_wsconn1)
+      _wsconn1.close();
+    if (_wsconn2)
+      _wsconn2.close();
+    if (_wsconn1 == undefined && _wsconn2 == undefined)
+      vehicle.close();
     t.done();
   }, TIME_FINISH_WAIT);
 }
-function helper_terminate_success( _msg ) {
+function helper_terminate_success( _msg, _wsconn1, _wsconn2 ) {
   addLogSuccess( _msg );
   t.step_timeout(function() {
     assert_true(true, _msg);
-    vehicle.close();
+    if (_wsconn1)
+      _wsconn1.close();
+    if (_wsconn2)
+      _wsconn2.close();
+    if (_wsconn1 == undefined && _wsconn2 == undefined)
+      vehicle.close();
     t.done();
   }, TIME_FINISH_WAIT);
 }
-function helper_terminate_failure( _msg ) {
+function helper_terminate_failure( _msg, _wsconn1, _wsconn2 ) {
   addLogFailure( _msg );
   t.step_timeout(function() {
     assert_throws(null, function(){}, _msg);
-    vehicle.close();
+    if (_wsconn1)
+      _wsconn1.close();
+    if (_wsconn2)
+      _wsconn2.close();
+    if (_wsconn1 == undefined && _wsconn2 == undefined)
+      vehicle.close();
     t.done();
   }, TIME_FINISH_WAIT);
 }
