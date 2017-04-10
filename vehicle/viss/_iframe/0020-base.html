@@ -1,0 +1,52 @@
+<html>
+
+<!-- iframe id="id_frame_1" src="0020_frame_1.html">
+<iframe id="id_frame_2" src="0020_frame_2.html" -->
+<iframe name="name_iframe_1" id="id_iframe_1" src="test_child.html"></iframe>
+<iframe name="name_iframe_2" id="id_iframe_2" src="test_child.html"></iframe>
+
+<span id="span_parent_target"></span>
+
+<script>
+
+//var domain_frame_1 = document.getElementById('id_frame_1');
+//var domain_frame_2 = document.getElementById('id_frame_2');
+
+window.addEventListener("load", function() {
+
+  var iframe_1 = document.getElementById("id_iframe_1");
+  var iframe_2 = document.getElementById("id_iframe_2");
+  var doc_1 = iframe_1.contentDocument;
+  var win_1 = iframe_1.contentWindow;
+  var doc_2 = iframe_2.contentDocument;
+  var win_2 = iframe_2.contentWindow;
+
+  var parent_phase = 0;
+
+  setInterval( parent_main, 2000);
+
+  function parent_main() {
+
+    parent_phase++;
+
+    document.getElementById("span_parent_target").innerHTML = parent_phase;
+
+    win_1.phase = parent_phase;
+    win_2.phase = parent_phase;
+
+  }
+
+  var iframe_el = document.querySelector("iframe");
+  var doc = iframe_el.contentDocument;
+  var p_el = document.createElement("p");
+  p_el.textContent = "inserted from parent to child";
+  
+  doc.body.appendChild(p_el);
+
+}, false);
+
+</script>
+
+
+</html>
+

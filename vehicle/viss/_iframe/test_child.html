@@ -1,0 +1,46 @@
+<html>
+
+<span id="span_target"></span>
+
+
+<script>
+var doc = window.parent.document;
+
+var p_el = document.createElement("p");
+p_el.textContent = "Added to parent from child";
+
+doc.body.appendChild(p_el);
+var PH_0 = 0;
+var PH_1 = 1;
+var PH_2 = 2;
+var PH_3 = 3;
+var phase = PH_0;
+
+function child_main() {
+
+  var targ = document.getElementById("span_target");
+
+  if (phase == PH_0) {
+    targ.innerHTML = "PH_0 now";
+    // do nothing
+  } else if (phase == PH_1) {
+    targ.innerHTML = "PH_1 now";
+  
+  } else if (phase == PH_2) {
+    targ.innerHTML = "PH_2 now";
+
+  } else if (phase == PH_3) {
+    targ.innerHTML = "PH_3 now";
+
+  } else if (phase == PH_4) {
+    targ.innerHTML = "PH_4 now";
+
+  }
+
+}
+
+setInterval( child_main, 2000);
+
+</script>
+
+</html>

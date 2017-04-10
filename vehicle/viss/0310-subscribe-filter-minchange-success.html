@@ -78,7 +78,7 @@ vehicle.onopen = function() {
     } else if (phase == PH_SUBSCRIBED) {
       t.step_func(function() {
         // wait subscriptionNotification
-        var res = isSubscriptionNotification(subId, msg);
+        var res = isSubscriptionNotificationResponse(subId, msg);
         if (res){
           if (notifCount > NOTIFICATION_COUNT) {
             // do unsubscribe
@@ -94,7 +94,7 @@ vehicle.onopen = function() {
           notif[notifCount].timestamp = ts;
           addLogMessage("SubscriptionNotification received. value = " + msg.value + ", timestamp = " + ts);
           notifCount++;
-        } else if (isSubscriptionNotificationError(subId, msg)) {
+        } else if (isSubscriptionNotificationErrorResponse(subId, msg)) {
           helper_terminate_failure("SubscriptionNotificationError received. Abort test.");
           phase = PH_END;
         }

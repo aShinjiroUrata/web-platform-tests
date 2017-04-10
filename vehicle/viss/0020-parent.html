@@ -1,0 +1,88 @@
+<html>
+
+<iframe name="nm_child1" id="id_child1" src="child-0020.html" width="800" height="200"></iframe>
+<br>
+<!-- iframe name="nm_child2" id="id_child2" src="child-0020.html" width="800" height="200"></iframe -->
+<br>
+<br>
+<span id="id_ch1_status"></span>
+<br>
+<span id="id_ch2_status"></span>
+
+<script>
+
+var PH_0_START = 0;
+var PH_1_CONN_ESTABLISHED  = 1;
+var PH_2_TRY_ACTION_SENT   = 2;
+var PH_3_VALID_AUTH_SENT = 3;
+var PH_4_TRY_ACTION_SENT   = 4;
+var PH_9_FINISH = 9;
+var PH_10_WAIT  = 10;
+
+var phase = PH_0_START;
+
+
+// 画面初期化
+window.addEventListener("load", function() {
+
+  var ifr_child1 = docuemnt.getElementById("id_child1");
+  var ifr_child2 = docuemnt.getElementById("id_child2");
+
+  var win_child1 = ifr_child1.contentWindow;
+  var win_child2 = ifr_child2.contentWindow;
+
+  win_child1.ifr_name = "nm_child1";
+  win_child2.ifr_name = "nm_child2";
+
+}, false);
+
+// childからログを表示させる
+function showLogFromChild(_name, _text) {
+  var span;
+  if (_name == "nm_child1")
+    span = document.getElementById("id_ch1_status");
+  else
+    span = document.getElementById("id_ch2_status");
+  span.innerHTML = _text;
+}
+
+// 親から子に動作を連絡する。結果を待って次の指示を送る
+var phase = PH_0_START;
+
+function parent_main() {
+
+  if (phase === PH_0_START) {
+    //childにWebSocket接続指示
+
+  } else if (pahse === PH_1_CONN_ESTABLISHED) {
+    //childに規定のaction実行を指示
+
+  } else if (phase === PH_2_TRY_ACTION_SENT) {
+    //childからのaction結果連絡を待つ
+
+    //結果が揃ったら、childの一つでAuthorizeを実行
+
+  } else if (phase === PH_3_VALID_AUTH_SENT) {
+    //Authorizeの結果連絡を待つ
+
+    //結果を受信したら、再度規定のaction実行を指示
+
+  } else if (phase === PH_4_TRY_ACTION_SENT) {
+    //actionの結果連絡を待つ
+
+    //結果が想定どおりであればSUCCESS、でなければFAILでテスト終了
+
+
+  } else {
+
+
+  }
+
+}
+
+
+
+// 子は連絡されたactionを行い、結果を伝えたら次の指示をまつ
+
+
+</html>
