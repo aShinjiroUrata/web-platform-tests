@@ -2,7 +2,9 @@
 var VISS_HOST = "127.0.0.1";
 
 var VISS_PORT = "3000";
-var VISS_PROTOCOL = "ws://"; // select ws:// or wss:// according to your VISS server
+// select ws:// or wss:// according to your VISS server
+var VISS_PROTOCOL = "ws://";
+//var VISS_PROTOCOL = "wss://";
 var VISS_SUBPROTO = "wvss1.0";
 
 // most tests uses this as URL to VISS server
@@ -21,6 +23,9 @@ var TOKEN_INVALID = "token_invalid";
 var AUTH_ACCESS_PATH   = "Signal.Cabin.Door.Row1.Right.IsLocked";
 var AUTH_ACCESS_ACTION = "set"; // should be 'get' or 'set'
 var AUTH_ACCESS_VALUE  = true;  // necessary when AUTH_ACCESS_ACTION == set
+
+// === for 0220 ===
+var SUBSCRIBE_PATH = "Signal.Drivetrain.Transmission.Speed";
 
 // === get helper ===
 function isAuthorizeSuccessResponse( _reqId, _inJson) {
@@ -203,7 +208,7 @@ function isSubscribeErrorResponse( _reqId, _inJson) {
   }
 }
 
-function isSubscriptionNotification( _subId, _inJson) {
+function isSubscriptionNotificationResponse( _subId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.subscriptionId &&     //'subscriptionId' just exists
       _inJson.timestamp &&          //'timestamp' exists
@@ -219,7 +224,7 @@ function isSubscriptionNotification( _subId, _inJson) {
     return false;
   }
 }
-function isSubscriptionNotificationError( _subId, _inJson) {
+function isSubscriptionNotificationErrorResponse( _subId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.subscriptionId &&       //'subscriptionId' just exists
       _inJson.timestamp &&            //'timestamp' exists
@@ -281,15 +286,13 @@ function isUnsubscribeErrorResponse( _reqId, _subId, _inJson) {
   }
 }
 
-//TODO: Don't we need unsubscribeAll Error Response check function?
-
 function isUnsubscribeAllSuccessResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.action === "unsubscribeAll" &&
       _inJson.requestId &&
-      _inJson.subscriptionId === undefined &&
-      _inJson.error === undefined &&
-      _inJson.timestamp)      //'timestamp' exists
+      _inJson.subscriptionId === null &&
+      _inJson.timestamp &&     //'timestamp' exists
+      _inJson.error === undefined)
   {
     if (_reqId === "" || _reqId === _inJson.requestId) {
       return true;
@@ -300,6 +303,24 @@ function isUnsubscribeAllSuccessResponse( _reqId, _inJson) {
     return false;
   }
 }
+function isUnsubscribeAllErrorResponse( _reqId, _inJson) {
+  // TODO: better to check with Json schema
+  if (_inJson.action === "unsubscribeAll" &&
+      _inJson.requestId &&
+      _inJson.subscriptionId === null &&
+      _inJson.timestamp &&      //'timestamp' exists
+      _inJson.error)          //'error' exists
+  {
+    if (_reqId === "" || _reqId === _inJson.requestId) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 
 // === utility ===
 function getTimestamp() {
@@ -342,14 +363,17 @@ function getUniqueReqId() {
   return "reqid-"+uniq;
 }
 
-function createRequestJson(_action, _path, _val) {
+function createRequestJson(_action, _path, _val, _filter ) {
   var reqJson = null;   
   var reqId = getUniqueReqId();
-  if (_action == 'get') {
+  if (_action === 'get') {
     reqJson = '{"action":"get","path":"'+_path+'","requestId":"'+reqId+'"}';   
-  } else if (_action == 'set') {
+  } else if (_action === 'set') {
     reqJson = '{"action":"set","path":"'+_path+'","value":"'+_val+'","requestId":"'+reqId+'"}';  
-  }    
+  } else if (_action === 'subscribe') {
+    var str_filter = JSON.stringify(_filter);
+    reqJson = '{"action":"subscribe","path":"'+_path+'","filters":"'+ str_filter +'","requestId":"'+reqId+'"}';   
+  }
   return reqJson;  
 }
 
@@ -361,7 +385,7 @@ function helper_terminate_normal( _msg, _wsconn1, _wsconn2 ) {
       _wsconn1.close();
     if (_wsconn2)
       _wsconn2.close();
-    if (_wsconn1 == undefined && _wsconn2 == undefined)
+    if (_wsconn1 == undefined && _wsconn2 == undefined && typeof(vehicle) != "undefined")
       vehicle.close();
     t.done();
   }, TIME_FINISH_WAIT);
@@ -374,7 +398,7 @@ function helper_terminate_success( _msg, _wsconn1, _wsconn2 ) {
       _wsconn1.close();
     if (_wsconn2)
       _wsconn2.close();
-    if (_wsconn1 == undefined && _wsconn2 == undefined)
+    if (_wsconn1 == undefined && _wsconn2 == undefined && typeof(vehicle) != "undefined")
       vehicle.close();
     t.done();
   }, TIME_FINISH_WAIT);
@@ -387,7 +411,7 @@ function helper_terminate_failure( _msg, _wsconn1, _wsconn2 ) {
       _wsconn1.close();
     if (_wsconn2)
       _wsconn2.close();
-    if (_wsconn1 == undefined && _wsconn2 == undefined)
+    if (_wsconn1 == undefined && _wsconn2 == undefined && typeof(vehicle) != "undefined")
       vehicle.close();
     t.done();
   }, TIME_FINISH_WAIT);

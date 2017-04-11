@@ -28,7 +28,7 @@ Open web platform test WebUI by visiting below URL via browser.<br>
 http://web-platform.test:8000/tools/runner/index.html
 ```
 
-#### Install VISS prototype as a trial environment
+#### Install ACCESS' VISS prototype as a trial environment
 
 1. Clone sources from the repository
 ```
@@ -50,7 +50,7 @@ $ vi web-platform-tests/vehicle/viss/vehicle-test-helper.js
 Update 'VISS_HOST','VISS_PORT' according to VISS prototype's setting.<br>
 (set the same value with `vehicle-signal-server-spec/svr_config.js` )<br>
 Edit 'VISS_PROTOCOL' to appropriate value.<br>
-In case of VISS prototype, use 'ws://' so far. (To be changed later)<br>
+In case of ACCESS' VISS prototype, use 'ws://' so far. (To be changed later)<br>
 
 2. Restart W3C test suites' serve command
 

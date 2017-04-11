@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Vehicle Information Service Spec Test</title>
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+
+<script src="./vehicle-test-helper.js"></script>
+<script src="./0020-const.js"></script>
+
+<h3> Access-Control test: channel independency among clients </h3>
+<h3> Get Signal.Drivetrain.Transmission.Speed</h3>
+
+<!-- TODO: senario?? -->
+
+<b> Application 1: 0020-child.html running </b>
+<iframe name="nm_child1" id="id_child1" src="0020-child.html" width="1400" height="100"></iframe>
+<br>
+<b> Application 2: 0020-child.html running </b>
+<iframe name="nm_child2" id="id_child2" src="0020-child.html" width="1400" height="100"></iframe>
+<br>
+<br>
+<div id="log"></div>
+<script>
+
+// ===================
+// === Preparation ===
+var t = async_test("Access-Control test: channel independency");
+
+var ch1_phase = PH_0_START;
+var ch2_phase = PH_0_START;
+
+var ifr_child1 = null;
+var ifr_child2 = null;
+
+var flg_connection = false;
+
+window.addEventListener("load", function() {
+
+  ifr_child1 = document.getElementById("id_child1");
+  ifr_child2 = document.getElementById("id_child2");
+
+  var win_child1 = ifr_child1.contentWindow;
+  var win_child2 = ifr_child2.contentWindow;
+
+  // in case server doesn't return response
+  t.step_timeout(function() {
+    if (flg_connection === false) {
+      helper_terminate_failure("Finish by timeout",null,null);
+    }
+  }, TIME_OUT_TIME);
+
+}, false);
+
+// =====================
+// === State Machine ===
+
+function parent_main() {
+
+  //addLogMessage("parent_main: ch1_pahse="+ch1_phase+" , ch2_phase="+ch2_phase);
+
+  if (ch1_phase === PH_0_START ||
+      ch2_phase === PH_0_START) {
+    //childにWebSocket接続指示
+
+  } else if (ch1_phase === PH_1_CONN_ESTABLISHED &&
+             ch2_phase === PH_1_CONN_ESTABLISHED) {
+    //TODO: 一定時間内にこの状態にならなければタイムアウト
+    flg_connection = true;
+
+    //childに規定のaction実行を指示
+    sendCmdToChild("child1", CMD_2_DO_ACTION);
+    sendCmdToChild("child2", CMD_2_DO_ACTION);
+    addLogMessage("CMD_2: WebSocket Opened. Send CMD_2_DO_ACTION");
+
+  } else if (ch1_phase === PH_2_ACTION_SENT ||
+             ch2_phase === PH_2_ACTION_SENT) {
+    //childからのaction結果連絡を待つ
+
+  } else if (
+    (ch1_phase === PH_3_ACTION_RECEIVED_ERROR) &&
+    (ch2_phase === PH_3_ACTION_RECEIVED_ERROR) ) {
+    //TODO: ch1, ch2 ともERRORとなるのが正しい。一方でもSUCCESSになったらテスト中止 
+
+    //結果が揃ったら、childの一つでAuthorizeを実行
+    sendCmdToChild("child1",CMD_3_DO_AUTHORIZE);
+    addLogMessage("CMD_3: DO_ACTION finished. Send CMD_3_DO_AUTHORIZE");
+
+  } else if (
+    (ch1_phase === PH_3_ACTION_RECEIVED_SUCCESS) ||
+    (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS) ) {
+    //TODO: ch1, ch2 ともERRORとなるのが正しい。一方でもSUCCESSになったらテスト中止 
+    t.step_func(function() {
+      var _msg = "";
+      if (ch1_phase === PH_3_ACTION_RECEIVED_SUCCESS)
+        _msg = _msg + "ch1: DO_ACTION success. ";
+      if (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS)
+        _msg = _msg + "ch2: DO_ACTION success. ";
+      addLogMessage("FAILURE: " + _msg);
+      addLogMessage("----: ACTION error on both connection is expected. ");
+      helper_terminate_failure("Action Succeeded (Error expected)",null,null);
+    })();
+
+  } else if (ch1_phase === PH_4_VALID_AUTH_SENT) {
+    //Authorizeの結果連絡を待つ
+
+  } else if (
+    (ch1_phase === PH_5_AUTH_RECEIVED_SUCCESS) &&
+    (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS || ch2_phase === PH_3_ACTION_RECEIVED_ERROR) ) {
+    //AUTH SUCCESSにならないと先にすすめない。その場合テスト中止
+    //結果を受信したら、再度規定のaction実行を指示
+    sendCmdToChild("child1",CMD_4_DO_ACTION);
+    sendCmdToChild("child2",CMD_4_DO_ACTION);
+    addLogMessage("CMD_4: DO_AUTHORIZE finished. Send CMD_4_DO_ACTION");
+
+  } else if (
+    (ch1_phase === PH_5_AUTH_RECEIVED_ERROR) &&
+    (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS || ch2_phase === PH_3_ACTION_RECEIVED_ERROR) ) {
+    //AUTH SUCCESSにならないと先にすすめない。その場合テスト中止
+    t.step_func(function() {
+      addLogMessage("FAILURE: Authorize Failed. Test terminate.");
+      addLogMessage("----: ACTION error on both connection is expected. ");
+      helper_terminate_failure("Authorize Failed (Success expected)",null,null);
+    })();
+
+  } else if (ch1_phase === PH_6_ACTION_SENT ||
+             ch2_phase === PH_6_ACTION_SENT) {
+    //actionの結果連絡を待つ
+
+  } else if (
+    (ch1_phase === PH_7_ACTION_RECEIVED_SUCCESS || ch1_phase === PH_7_ACTION_RECEIVED_ERROR) &&
+    (ch2_phase === PH_7_ACTION_RECEIVED_SUCCESS || ch2_phase === PH_7_ACTION_RECEIVED_ERROR) ) {
+    //結果が想定どおりであればSUCCESS、でなければFAILでテスト終了
+
+    addLogMessage("CMD_9: DO_ACTION finished. Send CMD_9_STOP");
+    sendCmdToChild("child1",CMD_9_STOP);
+    sendCmdToChild("child2",CMD_9_STOP);
+
+    //TODO: 結果判定
+    //  ch1=SUCCESS, ch2=ERROR が正しい。
+    //  それ以外の結果はNG
+    t.step_func(function() {
+      var _msg = "";
+      if (ch1_phase === PH_7_ACTION_RECEIVED_SUCCESS)
+        _msg = _msg + "ch1: DO_ACTION success. ";
+      else
+        _msg = _msg + "ch1: DO_ACTION error. ";
+
+      if (ch2_phase === PH_7_ACTION_RECEIVED_SUCCESS)
+        _msg = _msg + "ch2: DO_ACTION success. ";
+      else
+        _msg = _msg + "ch2: DO_ACTION error. ";
+
+      if (
+        ch1_phase === PH_7_ACTION_RECEIVED_SUCCESS &&
+        ch2_phase === PH_7_ACTION_RECEIVED_ERROR ) {
+        // Expected resutl. Test Success
+        addLogMessage("SUCCESS: " + _msg);
+        addLogMessage("----: ACTION on ch1:SUCCESS, ch2:ERROR ");
+        helper_terminate_success("Test Succeeded",null,null);
+
+      } else if (
+        ch1_phase === PH_7_ACTION_RECEIVED_ERROR ||
+        ch2_phase === PH_7_ACTION_RECEIVED_SUCCESS ) {
+        // Unexpected result. Test Failure
+        addLogMessage("FAILURE: " + _msg);
+        addLogMessage("----: ACTION result is not expected behavior.");
+        helper_terminate_failure("Test failed",null,null);
+      }
+    })();
+  }
+}
+
+// ===========================
+// === Communication Funcs ===
+
+// Msg: Child => Parent
+function handleMsgFromChild(_name, _phase) {
+  if (_name === "id_child1") {
+    ch1_phase = _phase;
+  } else if (_name === "id_child2") {
+    ch2_phase = _phase;
+  }
+  setTimeout( parent_main(), 0);
+}
+
+// Log: Child => Parent
+function showLogFromChild(_name, _text) {
+  addLogMessage("fromChild :"+_name+" : "+_text);
+}
+
+// Cmd: Parent => Child
+function sendCmdToChild(_name, _cmd) {
+  if (_name === "child1") {
+    ifr_child1.contentWindow.handleCmdFromParent(_cmd);
+  } else if (_name === "child2") {
+    ifr_child2.contentWindow.handleCmdFromParent(_cmd);
+  }
+}
+
+</script>
+</html>
+

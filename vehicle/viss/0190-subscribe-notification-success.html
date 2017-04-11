@@ -60,7 +60,7 @@ vehicle.onopen = function() {
     } else if (phase == PH_SUBSCRIBED) {
       t.step_func(function() {
         // wait subscriptionNotification
-        var res = isSubscriptionNotification(subId, msg);
+        var res = isSubscriptionNotificationResponse(subId, msg);
         assert_true(res, "True if subscriptionNotification received.");
         if (res){
           // after received 3 notif, send unsubscribe

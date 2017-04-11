@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: authorize() : Access-Control status will chang on valid authorize</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<!--
+Test Senario:
+1. <data path>の<action>が、AccessControl制限のため実行不可なことを確認
+2. valid token でAuthorizeを実行
+3. ACレベルが変わって、先ほどのactionが可能になることを確認する
+
+-->
+
+<h3> Authorize test: authorize() with valid token case <br>
+ --: {Action} to {Data path} is not available because of Access-Control status <br>
+ --: Execute 'Authorize' with valid token. The 'Authorize' will success.<br>
+ --: After the 'Authorize', Access-control stauts will change and the {Action} will become accessible.</h3>
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("Authorize with invalid token");
+
+var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var valid_token = TOKEN_VALID;
+var invalid_token = TOKEN_INVALID;
+
+var PH_0_START = 0;
+var PH_1_CONN_ESTABLISHED  = 1;
+var PH_2_TRY_ACTION_SENT   = 2;
+var PH_3_VALID_AUTH_SENT = 3;
+var PH_4_TRY_ACTION_SENT   = 4;
+var PH_9_FINISH = 9;
+
+var phase = PH_0_START;
+
+// Timeout for the case of server doesn't return response
+t.step_timeout(function() {
+  if (phase < PH_1_CONN_ESTABLISHED ) {
+    // In case that timeout expired before WebSocket connection establish, 
+    //  the test should be terminated as failure.
+    // In case this timeout expired after connection established and move on to next phase, 
+    //  the timeout should be ignored.
+    helper_terminate_failure("Finish by timeout", wsconn1, null);
+  }
+}, TIME_OUT_TIME);
+
+wsconn1.onopen = function() {
+  addLogMessage("PH0: wsconn1 websocket has been connected!");
+  phase = PH_1_CONN_ESTABLISHED;
+
+  send_targetAction(wsconn1, AUTH_ACCESS_ACTION, AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE ); 
+  phase = PH_2_TRY_ACTION_SENT;
+}
+
+wsconn1.onmessage = function(_event) {
+  var msg = JSON.parse(_event.data);
+  addLogMessage("----:wsconn1.onmessage : " + _event.data);
+
+  if (phase == PH_1_CONN_ESTABLISHED) {
+    addLogMessage("PH_1: " );
+
+  } else if (phase == PH_2_TRY_ACTION_SENT) {
+    addLogMessage("PH_2: " );
+
+    if ( isGetSuccessResponse("", msg) || isSetSuccessResponse("", msg) ) {
+      addLogMessage("----:wsconn1: TargetAction: Success(= not expected behavior) ");
+      // This is NOT expected action
+      wsconn1.ph2_action_res = true;
+
+      // If the action is available before Authorize, this test become meaningless. Terminate with failure.
+      helper_terminate_failure("Even before 'Authorize', the action is accessible. That doesn't meet test's condition. Test Failed.", wsconn1, null);
+
+    } else if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) ) {
+      // This is expected action
+      addLogMessage("----:wsconn1: TargetAction: Error(= expected behavior)");
+      wsconn1.ph2_action_res = false;
+
+      phase = PH_3_VALID_AUTH_SENT;
+      send_authorize(wsconn1, valid_token);
+
+    } else {
+      addLogMessage("----:wsconn1: Else case " );
+      helper_terminate_failure("Unexpected behavior. Test Failed.", wsconn1, null);
+    }
+
+  } else if (phase == PH_3_VALID_AUTH_SENT) {
+    addLogMessage("PH_3: " );
+
+    if ( isAuthorizeSuccessResponse("", msg) ) {
+      addLogMessage("----:Authorize success(= expected behavior)");
+      wsconn1.ph3_action_res = true;
+    } else if ( isAuthorizeErrorResponse("", msg) ) {
+      addLogMessage("----:Authorize error(= not expected behavior)");
+      wsconn1.ph3_action_res = false;
+    }
+    phase = PH_4_TRY_ACTION_SENT;
+    send_targetAction(wsconn1, AUTH_ACCESS_ACTION, AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE ); 
+
+  } else if (phase == PH_4_TRY_ACTION_SENT) {
+    addLogMessage("PH_4: " );
+    if ( isGetSuccessResponse("", msg) || isSetSuccessResponse("", msg) ) {
+      // This is expected behavior
+      addLogMessage("----:TargetActon: Success ");
+      helper_terminate_success("After VALID 'Authorize', the action become enabled. Test success. ", wsconn1, null);
+    } else if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) ) {
+      // This is not expected behavior.
+      addLogMessage("----:TargetActon: Failure ");
+      helper_terminate_failure("Even after VALID 'Authorize', the action doesn't become enabled. Test failed.", wsconn1, null);
+    }
+  }
+}
+
+var send_targetAction = function(_ws_conn, _action, _path, _value) {
+  addLogMessage("----:Execute action:'"+ _action +"' to dataPath:'"+ _path );
+  var targetActionRequest = createRequestJson( _action, _path, _value)
+  addLogMessage("----:Request Json : " + targetActionRequest);
+  _ws_conn.send( targetActionRequest );
+}
+
+var send_authorize = function(_ws_conn, _token) {
+  var reqId = getUniqueReqId();
+  var tokens = JSON.stringify({"authorization"     : _token,
+                "www-vehicle-device": _token});
+  var requestJson = '{"action":"authorize","tokens":'+ tokens +' ,"requestId":"'+reqId+'"}';
+  addLogMessage("----:Request Json : " + requestJson);
+  _ws_conn.send(requestJson);
+}
+</script>
+

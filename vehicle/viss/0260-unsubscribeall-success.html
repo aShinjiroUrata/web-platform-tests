@@ -98,6 +98,7 @@ vehicle.onopen = function() {
           addLogMessage("Send unsubscribeAll request");
           vehicle.send('{"action":"unsubscribeAll"'
                         +' ,"requestId":"'+reqId_unsubAll+'"}');
+          addLogMessage( "unsubscribeAll request has been sent." );
           phase = PH_SENT_UNSUBSCRIBE;
 
           // Set timeout for unsubscribeAll request
@@ -116,6 +117,7 @@ vehicle.onopen = function() {
         var res = isUnsubscribeAllSuccessResponse(reqId_unsubAll, msg);
 
         if (res) {
+          addLogMessage( "UnsubscribeSuccess response received." );
           // unsubscibe success
           assert_true(res, "unsubscribeAll success response received.");
           phase = PH_UNSUBSCRIBED;
@@ -132,10 +134,13 @@ vehicle.onopen = function() {
           }, TIME_MORATRIUM);
 
         } else if (isUnsubscribeErrorResponse(reqId_unsubAll, "", msg)) {
+          addLogMessage( "UnsubscribeError response received." );
           // unsubscibe error
           // Test is already success. Terminate anyway
           phase = PH_END;
           helper_terminate_failure("unsubscribeErrorResponse received");
+        } else {
+          addLogMessage( "Bug: This should never happen." );
         }
       })();
     } else if (phase == PH_UNSUBSCRIBED) {
@@ -145,12 +150,13 @@ vehicle.onopen = function() {
       // TODO: changed to better judgement cliteria
 
       t.step_func(function() {
-        var bNotifSuccess = isSubscriptionNotification( "", msg);
-        var bNotifError = isSubscriptionNotificationError( "", msg);
+        var bNotifSuccess = isSubscriptionNotificationResonse( "", msg);
+        var bNotifError = isSubscriptionNotificationErrorResponse( "", msg);
 
         if (bNotifSuccess || bNotifError) {
           // subscriptionNotification arrived. unsubscribeAll was not succeeded
-          bNotingHasCome = false;
+          bNothingHasCome = false;
+          addLogMessage( "Some subscriptionNotification message reached event after unsubscribeAll done." );
           helper_terminate_failure("unsubscribeAll failed");
         }
 
