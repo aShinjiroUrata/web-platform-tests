@@ -1,0 +1,268 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: authorize() tests</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-helper.js"></script>
+
+<!--
+A subscription ID should be valid only for the channel
+that requested subscription and other channels cannot unsubscribe it.
+
+Test Scenario:
+1. WebSocket connectionを２本張る
+2. conn1 で subscrbe を実行、subscriptionIdを取得
+3. そのsubIdで、conn2 で unsubscribeを実行
+4. conn1 で subscribeが解除されていないことを確認
+
+-->
+
+<h3> Subscribe Test: unique subscriptionId<br>
+--: 1.Establish two connections and execute subscribe on both connection
+--: 2.Execute subscribe on unconenction_1
+--: 3.Confirm that, subscribe has stopped at connection_1<br>
+--: 4.Confirm that, subscribe continues at connection_2<br>
+</h3>
+
+
+
+<h3>
+<div id="log"></div>
+</h3>
+
+<script>
+var t = async_test("0220 unique subscriptionId");
+
+var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+var wsconn2  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var wsconn1_opened = false;
+var wsconn2_opened = false;
+
+var valid_token = TOKEN_VALID;
+
+var PH_0_START = 0;
+var PH_1_TWO_CONNS_ESTABLISHED   = 1;
+var PH_2_CONN1_SUBSCRIBE_SENT    = 2;
+var PH_3_CONN2_UNSUBSCRIBE_SENT  = 3;
+var PH_4_CONN1_CONFIRM_SUBSCRIBE = 4;
+var PH_9_FINISH = 9;
+
+
+var phase = PH_0_START;
+
+function test_main() {
+
+  if (phase == PH_1_TWO_CONNS_ESTABLISHED) {
+    t.step_func(function() {
+      addLogMessage("PH1: Two connections ready. Try action to targets.");
+
+      phase = PH_2_CONN1_SUBSCRIBE_SENT;
+      addLogMessage("PH2: Try action before Authorize.");
+      // Conn1 subscribe request send
+      send_subscribe(wsconn1); 
+    })();
+
+  } else if (phase == PH_2_CONN1_SUBSCRIBE_SENT ) {
+    t.step_func(function() {
+      if (wsconn1.ph2_action_res === true) {
+          addLogMessage("PH2: success (subscribe on both wsconn1 success) ");
+
+          phase = PH_3_CONN2_UNSUBSCRIBE_SENT;
+          addLogMessage("PH3: Execute Unsubscribe on wsconn2 with wsconn1's subscriptionId.");
+          //addLogMessage("----:Send unsubscribe request on wsconn2 connection: tokens=" + valid_token);
+          var subId1 = wsconn1.ph2_subId;
+          send_unsubscribe(wsconn2, subId1);
+      }
+    })();
+
+  } else if (phase == PH_3_CONN2_UNSUBSCRIBE_SENT) {
+    t.step_func(function() {
+
+      if (wsconn2.ph3_auth_res == false) {
+        addLogMessage("PH3: Unsubscribe Failed in wsconn2. This is expected behavior.");
+        phase = PH_4_CONN1_CONFIRM_SUBSCRIBE;
+
+      } else if (wsconn2.ph3_auth_res == true) {
+        addLogMessage("PH3: Unsubscribe Success in wsconn2. This should not happen.");
+        phase = PH_4_CONN1_CONFIRM_SUBSCRIBE;
+        addLogMessage("PH4: Confirm subscribe is still working and could receive notification.");
+      }
+    })();
+
+  } else if (phase == PH_4_CONN1_CONFIRM_SUBSCRIBE) {
+    // do nothing
+  }
+}
+
+wsconn1.onopen = function() {
+  addLogMessage("PH0: wsconn1 websocket has been connected!");
+
+  // Timeout for the case of server doesn't return response
+  t.step_timeout(function() {
+    if (phase < PH_1_TWO_CONNS_ESTABLISHED ) {
+      // In case that timeout expired before WebSocket connection establish, 
+      //  the test should be terminated as failure.
+      // In case this timeout expired after connection established and move on to next phase, 
+      //  the timeout should be ignored.
+      helper_terminate_failure("Finish by timeout", wsconn1, wsconn2);
+    }
+  }, TIME_OUT_TIME);
+
+  wsconn1_opened = true;
+  if (wsconn1_opened && wsconn2_opened) {
+    phase = PH_1_TWO_CONNS_ESTABLISHED;
+    test_main();  // run the test
+  }
+}
+
+wsconn2.onopen = function() {
+  addLogMessage("PH0: wsconn2 websocket has been connected!");
+  wsconn2_opened = true;
+  if (wsconn1_opened && wsconn2_opened) {
+    phase = PH_1_TWO_CONNS_ESTABLISHED;
+    test_main();  // run the test
+  }
+}
+
+var ph_4_count = 0;
+
+wsconn1.onmessage = function(_event) {
+  var msg = JSON.parse(_event.data);
+  addLogMessage("----:wsconn1.onmessage : " + _event.data);
+
+  if (phase == PH_1_TWO_CONNS_ESTABLISHED) {
+
+  } else if (phase == PH_2_CONN1_SUBSCRIBE_SENT) {
+    //addLogMessage("----:wsconn1: Try action " );
+    //Error response should be returned since 'Authorize' has not executed yet.
+
+    /*
+    var ret;
+    ret = isGetErrorResponse("", msg);
+    addLogMessage("----:isGetErrorResponse = " + ret);
+    ret = isSetErrorResponse("", msg);
+    addLogMessage("----:isSetErrorResponse = " + ret);
+
+    ret = isGetSuccessResponse("", msg);
+    addLogMessage("----:isGetSuccessResponse = " + ret);
+    ret = isSetSuccessResponse("", msg);
+    addLogMessage("----:isSetSuccessResponse = " + ret);
+    */
+
+    if ( isSubscribeErrorResponse("", msg) ) {
+      addLogMessage("----:wsconn1: Subscribe Error ");
+      wsconn1.ph2_action_res = false;
+      helper_terminate_failure("Terminate by subscribe method failure.", wsconn1, wsconn2);
+    } else if ( isSubscribeSuccessResponse("", msg) ) {
+      addLogMessage("----:wsconn1: Success ");
+      wsconn1.ph2_action_res = true;
+      wsconn1.ph2_subId = msg.subscriptionId;
+    } else {
+      addLogMessage("----:wsconn1: Unexpected case. Terminate test. ");
+      helper_terminate_failure("Terminate by unexpected behavior.", wsconn1, wsconn2);
+    }
+    test_main();
+
+  } else if (phase == PH_3_CONN2_UNSUBSCRIBE_SENT) {
+    // do nothing
+  } else if (phase == PH_4_CONN1_CONFIRM_SUBSCRIBE ) {
+    // To confirm subscribe is still working, wait for 3 subscriptionNotification
+    if ( isSubscriptionNotificationErrorResponse("", msg) ) {
+      //wsconn1.ph4_action_res = false;
+    } else if ( isSubscriptionNotificationResponse("", msg) ) {
+      ph_4_count++;
+      if (ph_4_count > 3) {
+        // confirmed successfully. Test success.
+        helper_terminate_success("Test succeed. wsconn1's subscribe is still working.", wsconn1, wsconn2);
+      }
+    }
+    test_main();
+  }
+}
+
+wsconn2.onmessage = function(_event) {
+  var msg = JSON.parse(_event.data);
+  addLogMessage("----:wsconn2.onmessage : " + _event.data );
+
+  if (phase == PH_1_TWO_CONNS_ESTABLISHED) {
+
+  } else if (phase == PH_2_CONN1_SUBSCRIBE_SENT) {
+    //addLogMessage("----:wsconn2: Try action " );
+    //Error response should be returned since 'Authorize' has not executed yet.
+    if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) || isSubscribeErrorResponse("", msg) ) {
+      wsconn2.ph2_action_res = false;
+      addLogMessage("----:wsconn2: Error ");
+    } else if ( isGetSuccessResponse("", msg) || isSetSuccessResponse("", msg) || isSubscribeSuccessResponse("", msg) ) {
+      wsconn2.ph2_action_res = true;
+      wsconn2.ph2_subId = msg.subscriptionId;
+      addLogMessage("----:wsconn2: Success ");
+    } else {
+      addLogMessage("----:wsconn2: Else ");
+    }
+    test_main();
+
+  } else if (phase == PH_3_CONN2_UNSUBSCRIBE_SENT ) {
+    //addLogMessage("----:wsconn2: Authorize " );
+    if ( isUnsubscribeSuccessResponse("", "", msg) ) {
+      // This will not happen.
+      addLogMessage("----:wsconn2: Unsubscribe Success ");
+      wsconn2.ph3_auth_res = true;
+      test_main();
+    } else if (isUnsubscribeErrorResponse("", "", msg)) {
+      // Getting error response is right behevior,
+      // since unsubscribe on wsconn2 with subId obtained from  wsconn1.
+      addLogMessage("----:wsconn2: Unsubscribe Error ");
+      wsconn2.ph3_auth_res = false;
+      test_main();
+    } else {
+      //addLogMessage("----:wsconn2: Else ");
+    }
+
+  } else if (phase == PH_4_CONN1_CONFIRM_SUBSCRIBE) {
+    // do nothing
+  }
+}
+
+var send_targetAction = function(_ws_conn) {
+  var conn_name = "";
+  if (_ws_conn == wsconn1)
+    conn_name = "wsconn1";
+  else if (_ws_conn == wsconn2)
+    conn_name = "wsconn2";
+  else
+    return; //return by error
+
+  //addLogMessage("----:Execute action:'"+AUTH_ACCESS_ACTION+"' to dataPath:'"+AUTH_ACCESS_PATH+"' via websocket:" + conn_name);
+  var filter = JSON.stringify( {"interval": 100} );
+  var targetActionRequest = createRequestJson(  "subscribe",
+                                                AUTH_ACCESS_PATH,
+                                                null, filter );
+  addLogMessage("----:Request Json : " + targetActionRequest);
+  _ws_conn.send( targetActionRequest );
+}
+
+var send_subscribe = function(_ws_conn) {
+  var reqId = getUniqueReqId();
+  // omit 'filters' since optional
+  var requestJson = '{"action":"subscribe", "path":"'+ SUBSCRIBE_PATH + '","requestId":"'+reqId+'"}'; 
+  addLogMessage("----:Request Json : " + requestJson);
+  _ws_conn.send(requestJson);
+}
+
+
+var send_unsubscribe = function(_ws_conn, _subId) {
+  var reqId = getUniqueReqId();
+  //var subId = _ws_conn.subId;
+  //var tokens = JSON.stringify({"authorization"     : valid_token,
+  //              "www-vehicle-device": valid_token});
+  var requestJson = '{"action":"unsubscribe","subscriptionId":"'+ _subId +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("----:Request Json : " + requestJson);
+  _ws_conn.send(requestJson);
+}
+
+
+</script>
+

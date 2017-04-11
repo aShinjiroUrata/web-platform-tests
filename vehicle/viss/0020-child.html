@@ -1,0 +1,237 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Vehicle Signal Server Spec Test: authorize() : Access-Control status will chang on valid authorize</title>
+<link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+
+<!-- script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script -->
+<script src="./vehicle-test-helper.js"></script>
+<script src="./0020-const.js"></script>
+
+<!--
+Test Senario:
+1. <data path>の<action>が、AccessControl制限のため実行不可なことを確認
+2. valid token でAuthorizeを実行
+3. ACレベルが変わって、先ほどのactionが可能になることを確認する
+
+-->
+<b><span> Authorize test: authorize() with valid token case <br>
+ --: {Action} to {Data path} is not available because of Access-Control status <br>
+ --: Execute 'Authorize' with valid token. The 'Authorize' will success.<br>
+ --: After the 'Authorize', Access-control stauts will change and the {Action} will become accessible.
+</span></b>
+
+<!-- h3 -->
+<div id="log"></div>
+<!-- h3 -->
+
+<script>
+
+// ===================
+// === Preparation ===
+
+//var t = async_test("Authorize with invalid token");
+
+var wsconn  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+var valid_token = TOKEN_VALID;
+var invalid_token = TOKEN_INVALID;
+
+var parent_win = window.parent.window;
+var child_name = window.frameElement.id;
+//alert(child_name);
+var ifr_name = null;
+
+var ch_timer = null;
+
+var ch_phase = PH_10_WAIT;
+var pr_cmd = CMD_0_WAIT;
+
+
+//TODO:
+//インターバルタイマを回して、親からの指示をチェック
+//指示があれば、指示されたactionを実行
+//action結果をVISSから受信したら、結果を親に連絡
+
+
+// =======================
+// === Command Handler ===
+
+function child_main() {
+
+  //addLogMessageBottom("----:child_main: pr_cmd = " + pr_cmd);
+
+  if (pr_cmd === CMD_0_WAIT) {
+    //do nothing
+
+  //} else if (pr_cmd === PH_0_START) {
+  //  //websocket接続を確立する=> loadしたら自動的に接続
+
+  } else if (pr_cmd === CMD_1_CONNECT_WEBSOCKET ) {
+    //規定のactionを実行する
+    //起動するとそのまま接続されるので、このCMDはなくてもよい
+
+  } else if (pr_cmd === CMD_2_DO_ACTION ) {
+    //actionの結果をまつ
+    addLogMessageBottom("----:CMD_2: Action send");
+    send_targetAction(wsconn, AUTH_ACCESS_ACTION , AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE);
+    pr_cmd = CMD_0_WAIT;
+    ch_phase = PH_2_ACTION_SENT;
+    sendMsgToParent(child_name, ch_phase);
+
+    //結果を受けたら親に連絡する
+
+  } else if (pr_cmd === CMD_3_DO_AUTHORIZE ) {
+    //Authorizeの結果を待つ
+    addLogMessageBottom("----:CMD_3: Authorize send");
+    send_authorize(wsconn, valid_token);
+    pr_cmd = CMD_0_WAIT;
+    ch_phase = PH_4_VALID_AUTH_SENT;
+    sendMsgToParent(child_name, ch_phase);
+
+    //結果を受けたら親に連絡する
+
+  } else if (pr_cmd === CMD_4_DO_ACTION ) {
+    //規定のactionの結果を待つ
+    addLogMessageBottom("----:CMD_4: Action send again");
+    send_targetAction(wsconn, AUTH_ACCESS_ACTION , AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE);
+    pr_cmd = CMD_0_WAIT;
+    ch_phase = PH_6_ACTION_SENT;
+    sendMsgToParent(child_name, ch_phase);
+
+    //結果を受けたら親に連絡する
+
+  } else if (pr_cmd === CMD_9_STOP ) {
+    addLogMessageBottom("----:CMD_9: Stop the Test");
+    //clearInterval(ch_timer);
+  }
+}
+
+// ===========================
+// === VISS onopen handler ===
+wsconn.onopen = function() {
+  addLogMessageBottom("PH0: websocket connected! : " + child_name);
+
+  //親にWS接続完了を連絡、待ち状態に移行
+  ch_phase = PH_1_CONN_ESTABLISHED;
+  //sendMsgToParent(child_name, MSG_WEBSOCKET_CONNECTED);
+  sendMsgToParent(child_name, ch_phase);
+}
+
+// ============================
+// === VISS message handler ===
+wsconn.onmessage = function(_event) {
+  var msg = JSON.parse(_event.data);
+  addLogMessageBottom("----:wsconn1.onmessage : " + _event.data);
+
+  if (ch_phase == PH_1_CONN_ESTABLISHED) {
+    addLogMessageBottom("PH_1: CONNECTION ESTABLISHED " );
+
+  } else if (ch_phase == PH_2_ACTION_SENT) {
+    addLogMessageBottom("PH_2: ACTION SENT " );
+
+    if ( isGetSuccessResponse("", msg) || isSetSuccessResponse("", msg) ) {
+      //addLogMessageBottom(  child_name, "----:wsconn1: TargetAction: Success(= not expected behavior) ");
+      //sendLogToParent(child_name, "----:wsconn1: TargetAction: Success(= not expected behavior) ");
+      ch_phase = PH_3_ACTION_RECEIVED_SUCCESS;
+      sendMsgToParent(child_name, ch_phase);
+      // This is NOT expected action
+      // If the action is available before Authorize, this test become meaningless. Terminate with failure.
+
+    } else if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) ) {
+      // This is expected action
+      //addLogMessageBottom(  "----:wsconn1: TargetAction: Error(= expected behavior)");
+      //sendLogToParent("----:wsconn1: TargetAction: Error(= expected behavior)");
+      ch_phase = PH_3_ACTION_RECEIVED_ERROR;
+      sendMsgToParent(child_name, ch_phase);
+
+    } else {
+      //addLogMessageBottom(  "----:wsconn1: Else case " );
+      //sendLogToParent("----:wsconn1: Else case " );
+      ch_phase = PH_3_ACTION_RECEIVED_ERROR;
+      sendMsgToParent(child_name, ch_phase);
+
+    }
+
+  } else if (ch_phase == PH_4_VALID_AUTH_SENT) {
+    addLogMessageBottom("PH_4: VALID AUTHORIZE SENT" );
+
+    if ( isAuthorizeSuccessResponse("", msg) ) {
+      //addLogMessageBottom("----:Authorize success(= expected behavior)");
+      ch_phase = PH_5_AUTH_RECEIVED_SUCCESS;
+      sendMsgToParent(child_name, ch_phase);
+
+    } else if ( isAuthorizeErrorResponse("", msg) ) {
+      //addLogMessageBottom("----:Authorize error(= not expected behavior)");
+      ch_phase = PH_5_AUTH_RECEIVED_ERROR;
+      sendMsgToParent(child_name, ch_phase);
+
+    }
+
+  } else if (ch_phase == PH_6_ACTION_SENT) {
+    addLogMessageBottom("PH_6: ACTION SENT AGAIN " );
+    if ( isGetSuccessResponse("", msg) || isSetSuccessResponse("", msg) ) {
+      // This is expected behavior
+      ch_phase = PH_7_ACTION_RECEIVED_SUCCESS;
+      //addLogMessageBottom("----:TargetActon: Success ");
+      sendMsgToParent(child_name, ch_phase);
+    } else if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) ) {
+      // This is not expected behavior.
+      ch_phase = PH_7_ACTION_RECEIVED_ERROR;
+      //addLogMessageBottom("----:TargetActon: Failure ");
+      sendMsgToParent(child_name, ch_phase);
+    }
+  }
+}
+
+// ====================
+// === Send To VISS ===
+
+var send_targetAction = function(_ws_conn, _action, _path, _value) {
+  addLogMessageBottom("----:Execute action:'"+ _action +"' to dataPath:'"+ _path );
+  var targetActionRequest = createRequestJson( _action, _path, _value)
+  addLogMessageBottom("----:Request Json : " + targetActionRequest);
+  _ws_conn.send( targetActionRequest );
+}
+
+var send_authorize = function(_ws_conn, _token) {
+  var reqId = getUniqueReqId();
+  var tokens = JSON.stringify({"authorization"     : _token,
+                "www-vehicle-device": _token});
+  var requestJson = '{"action":"authorize","tokens":'+ tokens +' ,"requestId":"'+reqId+'"}';
+  addLogMessageBottom("----:Request Json : " + requestJson);
+  _ws_conn.send(requestJson);
+}
+
+// ===========================
+// === Communication Funcs ===
+
+// Msg: Child => Parent
+function sendMsgToParent( _child_name, _msg_obj ) {
+  window.parent.handleMsgFromChild(_child_name, _msg_obj);
+}
+
+// Log: Child => Parent
+var sendLogToParent = function( _child_name, _log_txt) {
+  window.parent.showLogFromChild(_child_name, _log_txt);
+}
+
+// Cmd: Parent => Child
+function handleCmdFromParent(_cmd) {
+  pr_cmd = _cmd;
+  setTimeout(function(){child_main();}, 1000);
+}
+
+//ch_timer = setInterval(function() {child_main();}, 1000);
+
+
+function scrollToBottom() {
+  document.body.scrollTop = document.body.scrollHeight;
+}
+function addLogMessageBottom(_msg) {
+  addLogMessage(_msg);
+  scrollToBottom();
+}
+
+</script>
+
