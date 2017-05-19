@@ -1,32 +1,49 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: authorize() tests</title>
+<title>
+[0010: Channel independency in an application]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
 <!--
+==========
+Test Assertion:
+[0010: Channel independency in an application]
+==
+When the client have more than two websocket channels connected to the server,
+ the access-control state of one channel should not affect others.
+
+==========
 Test Senario:
-1. Create 2 websocket connection (wsconn1, wsconn2)
-2. Open both connection
-3. Try an action for a data path which requires authorize.
-   (e.g. 'set' for 'Signal.Cabin.Door.Row1.Right.IsLocked') 
-4. This action should fail because 'authorize' has not executed yet.
-5. Execute 'Authorize' in wsconn2 connection and it success.
-6. Try the same action done in step3 again.
-7. This time, action should fail in wsconn1 again and should success in wsconn2.
+1. Open 2 websocket connection (wsconn1, wsconn2)<br>
+2. Execute Authorize() method in wsconn2 connection only<br>
+3. Execute an  action which requires authorize on both connections<br>
+4. Confirm the action succeeds in wsconn2 connection only<br>
 -->
 
-<h3> Authorize test: authorize() success case <br>
- --:When there are two connections and 'Authorize' is done in connection A. <br>
- --:Access-Control status in connection A should be elevated. <br>
- --:However, the 'Authorize' should not affect to connection B's Access-Control status. </h3>
+<div id="test-title">
+[0010: Channel independency in an application]<br>
+</div>
+<div id="scenario">
+<br>
+1. Open 2 websocket connection (wsconn1, wsconn2)<br>
+2. Execute Authorize() method in wsconn2 connection only<br>
+3. Execute an action which requires authorize on both connections<br>
+4. Confirm the Authorize() in wsconn2 doesn't affect to wsconn1<br>
+<br>
+<b>Expected Result:</b><br>
+- wsconn1: The action fails. <br>
+- wsconn2: The action success. <br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
 var t = async_test("channel independence test success case");
@@ -45,7 +62,6 @@ var PH_2_TRY_ACTION_SENT = 2;
 var PH_3_CONN2_AUTH_SENT = 3;
 var PH_4_TRY_ACTION_SENT = 4;
 var PH_9_FINISH = 9;
-
 
 var phase = PH_0_START;
 
@@ -114,8 +130,8 @@ function test_main() {
         addLogMessage("PH4: The action on wsconn1 still fail as expected.");
         addLogMessage("PH4: The action on wsconn2 succeeded as expected.");
         phase = PH_9_FINISH;
-        helper_terminate_success("By Authorize in wsconn2 connection, the action succeeded in wsconn2.", wsconn1, wsconn2);
-        addLogSuccess("Not succeeded in wsconn1.");
+        helper_terminate_success("In wsconn1, action failed.", wsconn1, wsconn2);
+        addLogSuccess("In wsconn2, action succeeded.");
 
       } else if (wsconn1.ph4_action_res == true ) {
         // Test terminate by failure
@@ -171,19 +187,6 @@ wsconn1.onmessage = function(_event) {
   } else if (phase == PH_2_TRY_ACTION_SENT) {
     //addLogMessage("----:wsconn1: Try action " );
     //Error response should be returned since 'Authorize' has not executed yet.
-
-    /*
-    var ret;
-    ret = isGetErrorResponse("", msg);
-    addLogMessage("----:isGetErrorResponse = " + ret);
-    ret = isSetErrorResponse("", msg);
-    addLogMessage("----:isSetErrorResponse = " + ret);
-
-    ret = isGetSuccessResponse("", msg);
-    addLogMessage("----:isGetSuccessResponse = " + ret);
-    ret = isSetSuccessResponse("", msg);
-    addLogMessage("----:isSetSuccessResponse = " + ret);
-    */
 
     if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) ) {
       //addLogMessage("----:wsconn1: Error ");
@@ -277,3 +280,4 @@ var send_authorize = function(_ws_conn) {
   _ws_conn.send(requestJson);
 }
 </script>
+

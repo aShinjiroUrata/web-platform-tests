@@ -19,7 +19,9 @@ var TOKEN_VALID   = "token_valid";
 var TOKEN_INVALID = "token_invalid";
 
 // === for test 0010, 0020, 0030, 0040 ===
-// Please configure a set of data path and action such that requires 'authorize' to do the action for the data path.
+// Need to configure a set of 'data path' and 'action' which requires
+//  authorization by Authorize() method to successfully do this action for this data path.
+// [PLEASE CONFIGURE THIS SECTION]
 var AUTH_ACCESS_PATH   = "Signal.Cabin.Door.Row1.Right.IsLocked";
 var AUTH_ACCESS_ACTION = "set"; // should be 'get' or 'set'
 var AUTH_ACCESS_VALUE  = true;  // necessary when AUTH_ACCESS_ACTION == set
@@ -337,22 +339,22 @@ function addLogMessage(_msg) {
   document.getElementById('log').innerHTML = msg;
 }
 function addLogSuccess(_msg) {
-  msg = document.getElementById('log').innerHTML;
+  msg = document.getElementById('result').innerHTML;
   // show message with green background
   msg = msg + "<br>"
         + '<div style="font-size:30px; background-color:#00CC00;">'
         + "SUCCESS : " + _msg
         + '</div>';
-  document.getElementById('log').innerHTML = msg;
+  document.getElementById('result').innerHTML = msg;
 }
 function addLogFailure(_msg) {
-  msg = document.getElementById('log').innerHTML;
+  msg = document.getElementById('result').innerHTML;
   // show message with red background
   msg = msg + "<br>"
         + '<div style="font-size:30px; background-color:red;">'
         + "FAILURE : " + _msg
         + '</div>';
-  document.getElementById('log').innerHTML = msg;
+  document.getElementById('result').innerHTML = msg;
 }
 
 function getUniqueReqId() { 

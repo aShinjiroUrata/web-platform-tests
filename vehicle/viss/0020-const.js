@@ -1,4 +1,4 @@
-// ソース間で共通して使用する定数を定義する
+// Definitions commonly used from parent and child source
 
 // === test phase value ===
 var PH_0_START              = 0;
@@ -28,14 +28,4 @@ var CMD_3_DO_AUTHORIZE = 3;
 var CMD_4_DO_ACTION = 4;
 
 var CMD_9_STOP = 9;
-
-// === message to parent ===
-/*
-var MSG_WAIT = 0;
-var MSG_WEBSOCKET_CONNECTED = 1;
-var MSG_ACTION_SUCCESS = 2;
-var MSG_ACTION_FAIL = 3;
-var MSG_AUTHORIZE_SUCCESS = 4;
-var MSG_AUTHORIZE_ERROR = 5;
-*/
 
