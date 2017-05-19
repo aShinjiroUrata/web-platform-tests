@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>Vehicle Information Service Spec Test</title>
+<title>
+[0020: Channel independency among clients]
+</title>
+
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
@@ -8,19 +12,48 @@
 <script src="./vehicle-test-helper.js"></script>
 <script src="./0020-const.js"></script>
 
-<h3> Access-Control test: channel independency among clients </h3>
-<h3> Get Signal.Drivetrain.Transmission.Speed</h3>
+<!--
+==========
+Test Assertion:
+[0020: Channel independency among clients]
+==
+The access-control state of a websocket channel should not affect the other applications.
 
-<!-- TODO: senario?? -->
+==========
+Test Senario:
+1. Open two client html apps (child1, child2) inside two iframes.
+2. Execute an action which requires authorize in both client app and confirm both fails.
+3. Execute Authorize() method in child1.
+4. Confirm the action success in child1 and fails in child2,
+   which means Authorize() method in child1 doesn't affect to child2.
+-->
 
+<div id="test-title">
+[0020: Channel independency among clients]<br>
+</div>
+<div id="scenario">
+<br>
+1. Open two client html apps (child1, child2) inside two iframes for each.<br>
+2. Execute an action (= Set() method to a data path) which requires authorize, in both client app.
+   Then Confirm both Set() method fails.<br>
+3. Execute Authorize() method in child1.<br>
+4. Confirm the Authorize() method in child1 doesn't affect to child2 as below.<br>
+<br>
+<b>Expected Result:</b><br>
+- child1: The action success. <br>
+- child2: The action fails. <br>
+</div>
+
+<div id="result"></div>
+<br>
 <b> Application 1: 0020-child.html running </b>
 <iframe name="nm_child1" id="id_child1" src="0020-child.html" width="1400" height="100"></iframe>
 <br>
 <b> Application 2: 0020-child.html running </b>
 <iframe name="nm_child2" id="id_child2" src="0020-child.html" width="1400" height="100"></iframe>
 <br>
-<br>
 <div id="log"></div>
+
 <script>
 
 // ===================
@@ -61,35 +94,41 @@ function parent_main() {
 
   if (ch1_phase === PH_0_START ||
       ch2_phase === PH_0_START) {
-    //childにWebSocket接続指示
+    //Command children to connect WebSocket
 
   } else if (ch1_phase === PH_1_CONN_ESTABLISHED &&
              ch2_phase === PH_1_CONN_ESTABLISHED) {
-    //TODO: 一定時間内にこの状態にならなければタイムアウト
+    //If execution doesn't come here by a certain time, should finish by timeout.
+
+    //Both children establish connections.
     flg_connection = true;
 
-    //childに規定のaction実行を指示
+    //Command children to execute an action
     sendCmdToChild("child1", CMD_2_DO_ACTION);
     sendCmdToChild("child2", CMD_2_DO_ACTION);
     addLogMessage("CMD_2: WebSocket Opened. Send CMD_2_DO_ACTION");
 
   } else if (ch1_phase === PH_2_ACTION_SENT ||
              ch2_phase === PH_2_ACTION_SENT) {
-    //childからのaction結果連絡を待つ
+    //The command has been sent. Wait for response from children.
 
   } else if (
     (ch1_phase === PH_3_ACTION_RECEIVED_ERROR) &&
     (ch2_phase === PH_3_ACTION_RECEIVED_ERROR) ) {
-    //TODO: ch1, ch2 ともERRORとなるのが正しい。一方でもSUCCESSになったらテスト中止 
+    //Received responses from both children.
+    //Expected result:
+    // - child1: failed
+    // - child2: failed
 
-    //結果が揃ったら、childの一つでAuthorizeを実行
+    //Then, execute Authorize() method in child1.
     sendCmdToChild("child1",CMD_3_DO_AUTHORIZE);
     addLogMessage("CMD_3: DO_ACTION finished. Send CMD_3_DO_AUTHORIZE");
 
   } else if (
     (ch1_phase === PH_3_ACTION_RECEIVED_SUCCESS) ||
     (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS) ) {
-    //TODO: ch1, ch2 ともERRORとなるのが正しい。一方でもSUCCESSになったらテスト中止 
+    //Received response from both children.
+    //This is not expected result. Terminate the test as FAILURE.
     t.step_func(function() {
       var _msg = "";
       if (ch1_phase === PH_3_ACTION_RECEIVED_SUCCESS)
@@ -102,13 +141,13 @@ function parent_main() {
     })();
 
   } else if (ch1_phase === PH_4_VALID_AUTH_SENT) {
-    //Authorizeの結果連絡を待つ
+    //Wait for Authorize() method response.
 
   } else if (
     (ch1_phase === PH_5_AUTH_RECEIVED_SUCCESS) &&
     (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS || ch2_phase === PH_3_ACTION_RECEIVED_ERROR) ) {
-    //AUTH SUCCESSにならないと先にすすめない。その場合テスト中止
-    //結果を受信したら、再度規定のaction実行を指示
+    //Received Authorize Success message from child1.
+    //Then, command children to execute the action again.
     sendCmdToChild("child1",CMD_4_DO_ACTION);
     sendCmdToChild("child2",CMD_4_DO_ACTION);
     addLogMessage("CMD_4: DO_AUTHORIZE finished. Send CMD_4_DO_ACTION");
@@ -116,7 +155,8 @@ function parent_main() {
   } else if (
     (ch1_phase === PH_5_AUTH_RECEIVED_ERROR) &&
     (ch2_phase === PH_3_ACTION_RECEIVED_SUCCESS || ch2_phase === PH_3_ACTION_RECEIVED_ERROR) ) {
-    //AUTH SUCCESSにならないと先にすすめない。その場合テスト中止
+    //Received Authorize Failure from child1. In this case, can not continue the test.
+    //Terminate the test as FAOLURE.
     t.step_func(function() {
       addLogMessage("FAILURE: Authorize Failed. Test terminate.");
       addLogMessage("----: ACTION error on both connection is expected. ");
@@ -125,20 +165,21 @@ function parent_main() {
 
   } else if (ch1_phase === PH_6_ACTION_SENT ||
              ch2_phase === PH_6_ACTION_SENT) {
-    //actionの結果連絡を待つ
+    //Wait for response from both children
 
   } else if (
     (ch1_phase === PH_7_ACTION_RECEIVED_SUCCESS || ch1_phase === PH_7_ACTION_RECEIVED_ERROR) &&
     (ch2_phase === PH_7_ACTION_RECEIVED_SUCCESS || ch2_phase === PH_7_ACTION_RECEIVED_ERROR) ) {
-    //結果が想定どおりであればSUCCESS、でなければFAILでテスト終了
+    //Responses are not expected results, terminate test as FAILURE.
 
     addLogMessage("CMD_9: DO_ACTION finished. Send CMD_9_STOP");
     sendCmdToChild("child1",CMD_9_STOP);
     sendCmdToChild("child2",CMD_9_STOP);
 
-    //TODO: 結果判定
-    //  ch1=SUCCESS, ch2=ERROR が正しい。
-    //  それ以外の結果はNG
+    //Expected Result:
+    // - child1: SUCCESS
+    // - child2: FAILURE
+    //(If result is not expected ones, test FAILURE.)
     t.step_func(function() {
       var _msg = "";
       if (ch1_phase === PH_7_ACTION_RECEIVED_SUCCESS)

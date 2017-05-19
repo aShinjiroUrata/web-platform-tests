@@ -2,28 +2,20 @@
 <meta charset="utf-8">
 <title>Vehicle Signal Server Spec Test: authorize() : Access-Control status will chang on valid authorize</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
-<!-- script src="/resources/testharness.js"></script>
-<script src="/resources/testharnessreport.js"></script -->
 <script src="./vehicle-test-helper.js"></script>
 <script src="./0020-const.js"></script>
 
-<!--
-Test Senario:
-1. <data path>の<action>が、AccessControl制限のため実行不可なことを確認
-2. valid token でAuthorizeを実行
-3. ACレベルが変わって、先ほどのactionが可能になることを確認する
-
--->
 <b><span> Authorize test: authorize() with valid token case <br>
  --: {Action} to {Data path} is not available because of Access-Control status <br>
  --: Execute 'Authorize' with valid token. The 'Authorize' will success.<br>
  --: After the 'Authorize', Access-control stauts will change and the {Action} will become accessible.
 </span></b>
 
-<!-- h3 -->
+<div id="result"></div>
+<br>
 <div id="log"></div>
-<!-- h3 -->
 
 <script>
 
@@ -47,13 +39,6 @@ var ch_timer = null;
 var ch_phase = PH_10_WAIT;
 var pr_cmd = CMD_0_WAIT;
 
-
-//TODO:
-//インターバルタイマを回して、親からの指示をチェック
-//指示があれば、指示されたactionを実行
-//action結果をVISSから受信したら、結果を親に連絡
-
-
 // =======================
 // === Command Handler ===
 
@@ -64,42 +49,29 @@ function child_main() {
   if (pr_cmd === CMD_0_WAIT) {
     //do nothing
 
-  //} else if (pr_cmd === PH_0_START) {
-  //  //websocket接続を確立する=> loadしたら自動的に接続
-
   } else if (pr_cmd === CMD_1_CONNECT_WEBSOCKET ) {
-    //規定のactionを実行する
-    //起動するとそのまま接続されるので、このCMDはなくてもよい
 
   } else if (pr_cmd === CMD_2_DO_ACTION ) {
-    //actionの結果をまつ
     addLogMessageBottom("----:CMD_2: Action send");
     send_targetAction(wsconn, AUTH_ACCESS_ACTION , AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE);
     pr_cmd = CMD_0_WAIT;
     ch_phase = PH_2_ACTION_SENT;
     sendMsgToParent(child_name, ch_phase);
 
-    //結果を受けたら親に連絡する
 
   } else if (pr_cmd === CMD_3_DO_AUTHORIZE ) {
-    //Authorizeの結果を待つ
     addLogMessageBottom("----:CMD_3: Authorize send");
     send_authorize(wsconn, valid_token);
     pr_cmd = CMD_0_WAIT;
     ch_phase = PH_4_VALID_AUTH_SENT;
     sendMsgToParent(child_name, ch_phase);
 
-    //結果を受けたら親に連絡する
-
   } else if (pr_cmd === CMD_4_DO_ACTION ) {
-    //規定のactionの結果を待つ
     addLogMessageBottom("----:CMD_4: Action send again");
     send_targetAction(wsconn, AUTH_ACCESS_ACTION , AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE);
     pr_cmd = CMD_0_WAIT;
     ch_phase = PH_6_ACTION_SENT;
     sendMsgToParent(child_name, ch_phase);
-
-    //結果を受けたら親に連絡する
 
   } else if (pr_cmd === CMD_9_STOP ) {
     addLogMessageBottom("----:CMD_9: Stop the Test");
@@ -111,8 +83,6 @@ function child_main() {
 // === VISS onopen handler ===
 wsconn.onopen = function() {
   addLogMessageBottom("PH0: websocket connected! : " + child_name);
-
-  //親にWS接続完了を連絡、待ち状態に移行
   ch_phase = PH_1_CONN_ESTABLISHED;
   //sendMsgToParent(child_name, MSG_WEBSOCKET_CONNECTED);
   sendMsgToParent(child_name, ch_phase);
@@ -215,15 +185,11 @@ function sendMsgToParent( _child_name, _msg_obj ) {
 var sendLogToParent = function( _child_name, _log_txt) {
   window.parent.showLogFromChild(_child_name, _log_txt);
 }
-
 // Cmd: Parent => Child
 function handleCmdFromParent(_cmd) {
   pr_cmd = _cmd;
   setTimeout(function(){child_main();}, 1000);
 }
-
-//ch_timer = setInterval(function() {child_main();}, 1000);
-
 
 function scrollToBottom() {
   document.body.scrollTop = document.body.scrollHeight;
