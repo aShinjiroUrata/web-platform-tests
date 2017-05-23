@@ -1,25 +1,59 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Information Service Spec Test: Subscribe() Test</title>
+<title>
+[0200: unique subscriptionId]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Subscribe Test: Unique subscriptionID</h3>
-<h3> Success Condition: There is no set of two subscriptionIDs with same value</h3>
-<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
+<div id="test-title">
+[0200: unique subscriptionId]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+The server ensures that a new unique subscription id value is returned<br>
+ for each successful subscription request for a particular WebSocket connection.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute 'subscribe' method X times.<br>
+   (e.g. path = 'Signal.Drivetrain.Transmission.Speed')<br>
+2. Confirm 'SubscribeSuccessResponse' is returned for X times and<br>
+   X number of subscriptionId is obtained.<br>
+3. Confirm that all the obtained subscriptionId are unique and
+   there is no set of subscriptionIds those have same value.
+4. Execute 'unsubscribeAll' to unsubscribe all the subscriptions<br>
+<br>
+<b>Expected Result:</b><br>
+- There is no duplicated subscriptionId<br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Subscribe test: Unique subscriptionID");
+var idnum_base = 200;
+var subscribe_num = 10;
 
-var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+var reqId = [];
+var subId = [];
 
+// init arrays
+for (var i=0; i<subscribe_num; i++) {
+  reqId[i] = "reqid-0" + idnum_base+i;
+  subId[i] = null;
+}
+
+var path = SUBSCRIBE_STANDARD_PATH;
+
+// phase
 var PH_START            = 0;
 var PH_SENT_SUBSCRIBE   = 1;
 var PH_SUBSCRIBED       = 2;
@@ -27,26 +61,16 @@ var PH_SENT_UNSUBSCRIBE = 3;
 var PH_UNSUBSCRIBED     = 4;
 var PH_END              = 5;
 
-var NOTIFICATION_COUNT  = 3;
-
-var reqId = [];
-var subId = [];
-var idnum_base = 200;
-var iMax = 10; // 10 is appropriate?
-
-var path = "Signal.Drivetrain.Transmission.Speed";
-var notifCount = 0;
 var phase = PH_START;
 
+var t = async_test("Subscribe test: Unique subscriptionID");
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
 vehicle.onopen = function() {
-  // request a signal
-  for (var i=0; i<iMax; i++) {
-    reqId[i] = "reqid-0" + idnum_base+i;
-    subId[i] = null;
-  }
 
   // process messages from the server
   vehicle.onmessage = function(event) {
+    addLogMessage("response: json=" + event.data);
     var msg = JSON.parse(event.data);
 
     if (phase == PH_START) {
@@ -58,7 +82,7 @@ vehicle.onopen = function() {
         assert_true(res, "True if subscribeSuccessResponse received.");
 
         if (res) {
-          for (var i=0; i<iMax; i++) {
+          for (var i=0; i<subscribe_num; i++) {
             if (msg.requestId === reqId[i]) {
               subId[i] = msg.subscriptionId;
               addLogMessage("subscribeSuccessResponse for reqId["+i+"] received. subscribeId = "
@@ -66,73 +90,75 @@ vehicle.onopen = function() {
             }
           }
 
-        } else if (isSubscribeErrorResponse("", msg)) {
+        } else {
           helper_terminate_failure("subscribeErrorResponse received. test failed.");
-          //TODO: unsubscribeAll
           unsubscribeAllRequest(subId);
           phase = PH_END;
         }
 
         // check if all the subscribe() response received
         var passed = subId.every(function(element, index, array) { return (element != null); });
+
         if (passed) {
           //all subscribe() received subscribeSuccessResponse
           phase = PH_SUBSCRIBED;
-          //TODO: unsubscribeAll
           unsubscribeAllRequest(subId);
 
           var subId0 = subId[0];
           var subIdRest = subId.slice(1);
+
+          addLogMessage("<br>Confirm there is no duplicated subscriptionId.");
           // check if no subId is duplicate of subId0
-          var success = subIdRest.every(function(element, index, array) { 
+          var success = subIdRest.every(function(element, index, array) {
             var idx = index + 1;
             if (element === subId0) {
-              addLogMessage("subId["+ idx +"] == subId0");
+              addLogMessage("subId["+ idx +"] == subId[0]");
               return false;
             } else {
-              addLogMessage("subId["+ idx +"] != subId0");
+              addLogMessage("subId["+ idx +"] != subId[0]");
               return true;
             }
           });
           if (success) {
-            helper_terminate_success("There is no duplicated subId of<br> subId[0] = " + subId[0]);
-          phase = PH_END;
+            addLogMessage("Test Success: There is no duplicated subId of subId[0] = " + subId[0] + "<br>");
+            helper_terminate_success("There is no duplicsfated of subId[0] = " + subId[0]);
+          } else {
+            addLogMessage("Test Failure: There is no duplicated subId. Test Failed.<br>");
+            helper_terminate_failure("There is no duplicated subId. Test Failed.");
           }
+          phase = PH_END;
         }
 
       })();
     } else if (phase == PH_SUBSCRIBED) {
-      addLogMessage("json = " + event.data);
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
-      addLogMessage("json = " + event.data);
     } else if (phase == PH_UNSUBSCRIBED) {
-      addLogMessage("json = " + event.data);
-      // nothing to do
     }
   }
 
   // in case server doesn't return response
   t.step_timeout(function() {
-    if (phase < PH_SUBSCRIBED) {_
+    if (phase < PH_SUBSCRIBED) {
       helper_terminate_failure("Finish by timeout");
     }
   }, TIME_OUT_TIME);
 
   addLogMessage("Send subscribe request: path="+path);
   phase = PH_SENT_SUBSCRIBE;
-  for (var i=0; i< iMax; i++) {
-    vehicle.send('{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+ reqId[i] +'"}');
+  var sub_request;
+  for (var i=0; i< subscribe_num; i++) {
+    sub_request = '{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+ reqId[i] +'"}';
+    addLogMessage("Sub request: json=" + sub_request);
+    vehicle.send(sub_request);
   }
-
 }
 
 function unsubscribeAllRequest(_subId) {
   var reqId_base = 1000;
-  for (var i=0; i<iMax; i++) {
-    vehicle.send('{"action":"unsubscribe","subscriptionId":"'+ _subId[i] +'" ,"requestId":"'
-                 + (reqId_base + i).toString(10) +'"}');
-    addLogMessage("unsubscribe sent with subId["+i+"] = " + _subId[i] );
-  }
+  var unsuball_request = '{"action":"unsubscribeAll","requestId":"'+reqId_base+'"}';
+  addLogMessage("unsubAll request: json="+unsuball_request );
+  vehicle.send( unsuball_request );
 }
+
 </script>
 

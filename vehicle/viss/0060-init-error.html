@@ -1,18 +1,40 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Information Service Spec Test: initialize test </title>
+<title>
+[0060: establish a WebSocket session with 'ws' shema]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Initialize test: connect with 'ws' fails </h3>
-<h3> Success Condition: try 'ws' connection and failed to connect </h3>
+<div id="test-title">
+[0060: establish a WebSocket session with 'ws' shema]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a request to the server to create a new WebSocket session<br>
+ whose schema and sub-protocol are 'ws' and 'wvss' with a version number suffix,<br>
+ the server refuses the request.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Try to open websocket connection with 'ws' protocol + 'wvss1.0" subprotocol<br>
+2. Confirm the websocket connection will not be established.<br>
+<br>
+<b>Expected Result:</b><br>
+- Websocket connection is not be established. <br>
+</div>
 
-<h3>
+<br>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
+
 
 <script>
 var WS_URL = "ws://"+VISS_HOST+":"+VISS_PORT;

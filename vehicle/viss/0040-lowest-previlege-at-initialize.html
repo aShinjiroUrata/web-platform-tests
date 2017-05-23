@@ -1,50 +1,71 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: Access-Control : No privilege on opening a channel</title>
+<title>
+[0040: No privilege on opening a channel]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
 <!--
+==========
+Test Assertion:
+[0040: No privilege on opening a channel]
+==
+When the client initiate a new websocket channel connection to the server,
+ the access-control state of the channel should be the lowest level.
+==========
 Test Senario:
-1. WebSocket connectionを開く
-2. 接続直後は'Authorize'実行前のため、privilegeレベルが最低であることを確認する。
-   具体的には、<data pathk>の<action>がAccessControl制限のため実行不可なことを確認する
-
+1. Open a websocket connection<br>
+2. Execute an {Action} to {Data path} which does not success without authorization. <br>
+   (e.g. {Action}= 'set', {Data path} = 'Signal.Cabin.Door.Row1.Right.IsLocked')
+3. Confirm the action fails since 'authorize' method have not executed and so privilege level is low.
 -->
 
-<h3> Access-Control status test: No privilege on opening a channel <br>
- --: {Action} to {Data path} is not available because of Access-Control status <br>
- --: Execute 'Authorize' with valid token. The 'Authorize' will success.<br>
- --: After the 'Authorize', Access-control stauts will change and the {Action} will become accessible.</h3>
+<div id="test-title">
+[0040: No privilege on opening a channel]
+</div>
+<div id="scenario">
+<br>
+1. Open a websocket connection<br>
+2. Execute an {Action} to {Data path} which does not success without authorization.<br>
+   (e.g. {Action}= 'set', {Data path} = 'Signal.Cabin.Door.Row1.Right.IsLocked')<br>
+3. Confirm the action fails since 'authorize' method have not executed and so privilege level is low.<br>
+<b>Expected Result:</b><br>
+- The {action} to {data path} fails before execution of Authorize() method <br>
+</div>
 
-<h3>
+<br>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("No privilege on opening a channel");
+// const
+var action_method = AUTH_ACCESS_ACTION;
+var action_path   = AUTH_ACCESS_PATH;
+var action_value  = AUTH_ACCESS_VALUE;
 
-var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
-var valid_token = TOKEN_VALID;
-var invalid_token = TOKEN_INVALID;
-
-var PH_0_START = 0;
-var PH_1_CONN_ESTABLISHED  = 1;
-var PH_2_TRY_ACTION_SENT   = 2;
-var PH_9_FINISH = 9;
+// phase value
+var PH_0_START            = 0;
+var PH_1_CONN_ESTABLISHED = 1;
+var PH_2_TRY_ACTION_SENT  = 2;
+var PH_9_FINISH           = 9;
 
 var phase = PH_0_START;
+
+var t = async_test("No privilege on opening a channel");
+var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 // Timeout for the case of server doesn't return response
 t.step_timeout(function() {
   if (phase < PH_1_CONN_ESTABLISHED ) {
-    // In case that timeout expired before WebSocket connection establish, 
+    // In case that timeout expired before WebSocket connection establish,
     //  the test should be terminated as failure.
-    // In case this timeout expired after connection established and move on to next phase, 
+    // In case this timeout expired after connection established and move on to next phase,
     //  the timeout should be ignored.
     helper_terminate_failure("Finish by timeout", wsconn1, null);
   }
@@ -54,7 +75,7 @@ wsconn1.onopen = function() {
   addLogMessage("PH0: wsconn1 websocket has been connected!");
   phase = PH_1_CONN_ESTABLISHED;
 
-  send_targetAction(wsconn1, AUTH_ACCESS_ACTION, AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE ); 
+  send_targetAction(wsconn1, action_method, action_path, action_value );
   phase = PH_2_TRY_ACTION_SENT;
 }
 
@@ -74,16 +95,16 @@ wsconn1.onmessage = function(_event) {
       wsconn1.ph2_action_res = true;
 
       // If the action is available before Authorize, this test become meaningless. Terminate with failure.
-      addLogMessage("At opening a channel(=WebSocket connection), Access-Control status should be lowest level.");
-      helper_terminate_failure("Since the {action} success, test is Failed.", wsconn1, null);
+      addLogMessage("At opening a channel, Access-Control status should be lowest level.");
+      helper_terminate_failure("However the {action} success. test is Failed.", wsconn1, null);
 
     } else if ( isGetErrorResponse("", msg) || isSetErrorResponse("", msg) ) {
       // This is expected action
       addLogMessage("----:wsconn1: TargetAction: Error(= expected behavior)");
       wsconn1.ph2_action_res = false;
 
-      addLogSuccess("At opening a channel(=WebSocket connection), Access-Control status should be lowest level.");
-      helper_terminate_success("Since the {action} failed, test is Success.", wsconn1, null);
+      addLogSuccess("At opening a channel, Access-Control status should be lowest level.");
+      helper_terminate_success("Therefore the {action} failed. Test succeeded.", wsconn1, null);
 
     } else {
       addLogFailure("----:wsconn1: Else case " );
@@ -99,13 +120,4 @@ var send_targetAction = function(_ws_conn, _action, _path, _value) {
   _ws_conn.send( targetActionRequest );
 }
 
-var send_authorize = function(_ws_conn, _token) {
-  var reqId = getUniqueReqId();
-  var tokens = JSON.stringify({"authorization"     : _token,
-                "www-vehicle-device": _token});
-  var requestJson = '{"action":"authorize","tokens":'+ tokens +' ,"requestId":"'+reqId+'"}';
-  addLogMessage("----:Request Json : " + requestJson);
-  _ws_conn.send(requestJson);
-}
 </script>
-

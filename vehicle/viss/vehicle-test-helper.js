@@ -1,3 +1,18 @@
+/*
+Preparation
+
+configure VISS server's information
+VISS_HOST : host name or IP address
+
+TODO:...
+
+
+Configure TOKEN_VALID and TOKEN_INVALID those are
+ recognized as valid and invalid security tokens.
+
+*/
+
+
 // === General setting ===
 var VISS_HOST = "127.0.0.1";
 
@@ -17,6 +32,25 @@ var TIME_OUT_TIME = 5000;    // time to forcefully terminate the test
 // Please replace with token strings those are valid/invalid for your VISS server implementation.
 var TOKEN_VALID   = "token_valid";
 var TOKEN_INVALID = "token_invalid";
+
+// == path for get method test ==
+//var path = "Signal.Drivetrain.Transmission.Speed";
+var GET_STANDARD_PATH = "Signal.Drivetrain.Transmission.Speed";
+var GET_WILDCARD_PATH = "Signal.Drivetrain.Transmission.*";
+var GET_INVALID_PATH = "Signal.Drivetrain.Transmission.abcdef";
+
+// == path for set method test ==
+// 'path' and 'value'  which doesn't require authorization.
+var SET_NO_AUTH_PATH  = "Signal.Drivetrain.Transmission.Gear";
+var SET_INVALID_PATH  = "Signal.Drivetrain.Transmission.abcdef";
+var SET_NO_AUTH_VALUE = 5; //Gear value: -1 to 15
+// 'path' and 'value'  which requires authorization.
+var SET_NEED_AUTH_PATH  = "Signal.Drivetrain.Transmission.Gear";
+var SET_NEED_AUTH_VALUE = 5; //Gear value: -1 to 15
+
+// == path for subscribe method test ==
+var SUBSCRIBE_STANDARD_PATH = GET_STANDARD_PATH;
+var SUBSCRIBE_INVALID_PATH  = GET_INVALID_PATH;
 
 // === for test 0010, 0020, 0030, 0040 ===
 // Need to configure a set of 'data path' and 'action' which requires
@@ -387,10 +421,12 @@ function helper_terminate_normal( _msg, _wsconn1, _wsconn2 ) {
       _wsconn1.close();
     if (_wsconn2)
       _wsconn2.close();
+
+    //close websocket connection
     if (_wsconn1 == undefined && _wsconn2 == undefined && typeof(vehicle) != "undefined")
       vehicle.close();
     t.done();
-  }, TIME_FINISH_WAIT);
+  }, TIME_FINISH_WAIT); // wait time to let human read the result.
 }
 function helper_terminate_success( _msg, _wsconn1, _wsconn2 ) {
   addLogSuccess( _msg );
@@ -400,10 +436,12 @@ function helper_terminate_success( _msg, _wsconn1, _wsconn2 ) {
       _wsconn1.close();
     if (_wsconn2)
       _wsconn2.close();
+
+    //close websocket connection
     if (_wsconn1 == undefined && _wsconn2 == undefined && typeof(vehicle) != "undefined")
       vehicle.close();
     t.done();
-  }, TIME_FINISH_WAIT);
+  }, TIME_FINISH_WAIT); // wait time to let human read the result.
 }
 function helper_terminate_failure( _msg, _wsconn1, _wsconn2 ) {
   addLogFailure( _msg );
@@ -413,9 +451,11 @@ function helper_terminate_failure( _msg, _wsconn1, _wsconn2 ) {
       _wsconn1.close();
     if (_wsconn2)
       _wsconn2.close();
+
+    //close websocket connection
     if (_wsconn1 == undefined && _wsconn2 == undefined && typeof(vehicle) != "undefined")
       vehicle.close();
     t.done();
-  }, TIME_FINISH_WAIT);
+  }, TIME_FINISH_WAIT); // wait time to let human read the result.
 }
 

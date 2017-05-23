@@ -1,52 +1,83 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: authorize() : Access-Control status unchanged on invalid authorize</title>
+<title>
+[0031: Status unchnaged on incorrect authorization]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
 <!--
+==========
+Test Assertion:
+[0031: Status unchnaged on incorrect authorization]
+==
+When a websocket channel is privileged and the server receives invalid 'authorize' request,
+ the privileged level (=access control state of the channel) should not be changed.
+==========
 Test Senario:
-1. <data path>の<action>が、AccessControl制限のため実行不可なことを確認
-2. invalid token でAuthorizeを実行
-3. ACレベルは変化せずて、先ほどのactionは変わらず不可能なことを確認する
-
+1. Open a websocket connection (wsconn1)<br>
+2. Execute an action which requires authorization(e.g. set method for door.IsLocked)<br>
+   And confirm the action fails.
+3. Execute Authorize() method with *INVALID* token and confirm it fail.<br>
+4. Execute the same action again and confirm the action still fail<br>
+   because privilege level was not changed.
 -->
 
-<h3> Authorize test: authorize() with invalid token case <br>
- --: {Action} to {Data path} is not available because of Access-Control status <br>
- --: Execute 'Authorize' with invalid token. The 'Authorize' will fail.<br>
- --: After the 'Authorize', Access-control stauts doesn't change and the {Action} is still not available</h3>
+<div id="test-title">
+[0031: Status unchnaged on incorrect authorization]
+</div>
+<div id="scenario">
+<br>
+1. Open a websocket connection (wsconn1)<br>
+2. Execute an action which requires authorization(e.g. set method for door.IsLocked)<br>
+   And confirm the action fails.
+3. Execute Authorize() method with *INVALID* token and confirm it fail.<br>
+4. Execute the same action again and confirm the action still fail<br>
+   because privilege level was not changed.<br>
+<br>
+<b>Expected Result:</b><br>
+- The {action} to {data path} fails before execution of Authorize() method <br>
+- The {action} to {data path} fails again after execution of Authorize() method <br>
+</div>
 
-<h3>
+<br>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
+
 
 <script>
-var t = async_test("Authorize with invalid token");
+// const
+var action_method = AUTH_ACCESS_ACTION;
+var action_path   = AUTH_ACCESS_PATH;
+var action_value  = AUTH_ACCESS_VALUE;
 
-var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
-var valid_token = TOKEN_VALID;
+var valid_token   = TOKEN_VALID;
 var invalid_token = TOKEN_INVALID;
 
-var PH_0_START = 0;
+// phase value
+var PH_0_START             = 0;
 var PH_1_CONN_ESTABLISHED  = 1;
 var PH_2_TRY_ACTION_SENT   = 2;
 var PH_3_INVALID_AUTH_SENT = 3;
 var PH_4_TRY_ACTION_SENT   = 4;
-var PH_9_FINISH = 9;
+var PH_9_FINISH            = 9;
 
 var phase = PH_0_START;
+
+var t = async_test("Authorize with invalid token");
+var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 // Timeout for the case of server doesn't return response
 t.step_timeout(function() {
   if (phase < PH_1_CONN_ESTABLISHED ) {
-    // In case that timeout expired before WebSocket connection establish, 
+    // In case that timeout expired before WebSocket connection establish,
     //  the test should be terminated as failure.
-    // In case this timeout expired after connection established and move on to next phase, 
+    // In case this timeout expired after connection established and move on to next phase,
     //  the timeout should be ignored.
     helper_terminate_failure("Finish by timeout", wsconn1, null);
   }
@@ -56,7 +87,7 @@ wsconn1.onopen = function() {
   addLogMessage("PH0: wsconn1 websocket has been connected!");
   phase = PH_1_CONN_ESTABLISHED;
 
-  send_targetAction(wsconn1, AUTH_ACCESS_ACTION, AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE ); 
+  send_targetAction(wsconn1, action_method, action_path, action_value );
   phase = PH_2_TRY_ACTION_SENT;
 }
 
@@ -102,7 +133,7 @@ wsconn1.onmessage = function(_event) {
       wsconn1.ph3_action_res = false;
     }
     phase = PH_4_TRY_ACTION_SENT;
-    send_targetAction(wsconn1, AUTH_ACCESS_ACTION, AUTH_ACCESS_PATH, AUTH_ACCESS_VALUE ); 
+    send_targetAction(wsconn1, action_method, action_path, action_value );
 
   } else if (phase == PH_4_TRY_ACTION_SENT) {
     addLogMessage("PH_4: " );

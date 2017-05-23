@@ -1,67 +1,76 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: get method tests</title>
+<title>
+[0170: set a signal with an invalid request]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Set test: Set with invalid path. Error case </h3>
-<h3> Set Signal.Drivetrain.Transmission.xxxxxx </h3>
+<div id="test-title">
+[0170: set a signal with an invalid request]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a request with an *INCORRECT* 'set' action to the server,<br>
+ a JSON data object defined as 'setErrorResponse' is returned.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute 'set' method specifing *INVALID* data path and requestId.<br>
+   (e.g. path = 'Signal.Drivetrain.Transmission.abcdef')<br>
+2. Confirm 'SetErrorResponse' containing the specified requestId is received.<br>
+<br>
+<b>Expected Result:</b><br>
+- 'SetErrorResponse' containing the specified requestId is received.<br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
+var reqId_1 = "reqid-0170";
+var path = SET_INVALID_PATH;
+var val = SET_NO_AUTH_VALUE; //Gear value: -1 to 15
 
 var t = async_test("Set test: Set with invalid path. Error case.");
-
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId_1 = "reqid-0170";
-  var path = "Signal.Drivetrain.Transmission.xxxx";
-  var val = 5; //Gear value: -1 to 15
-
   // process messages from the server
   vehicle.onmessage = t.step_func(
     function(event) {
+      addLogMessage("set response: json="+event.data);
       var msg = JSON.parse(event.data);
       var res;
 
       // if requestId matches and msg.value has value, judge as OK.
       if (isSetErrorResponse(reqId_1, msg)) {
-        // try get for verification
-        res = true;
-        addLogSuccess("setErrorResponse received. err=" + msg.error.number);
+        helper_terminate_success("setErrorResponse received. err=" + msg.error.number);
+
       } else {
-        res = false;
-        addLogFailure("setErrorResponse not received.");
+        helper_terminate_failure("setErrorResponse not received.");
       }
-      t.step_timeout(function() {
-        assert_true(res, "OK: "+path + ": value = " + msg.value);
-        vehicle.close();
-        t.done();
-      }, TIME_FINISH_WAIT);
     }
   );
+
   // in case server doesn't return response
   t.step_timeout(function() {
-    addLogFailure("Fishish by timeout");
-    t.step_timeout(function() {
-      assert_true(false);
-      vehicle.close();
-      t.done();
-    }, TIME_FINISH_WAIT);
+    helper_terminate_failure("Fishish by timeout");
   }, TIME_OUT_TIME);
 
   addLogMessage("Send set request: path="+path+", value="+val);
-  vehicle.send('{"action":"set","path":"'+ path+'"'
-              + ' ,"value":"'+val+'"'
-              + ' ,"requestId":"'+reqId_1+'"'
-              + '}');
+  var set_request = '{"action":"set","path":"'+ path+'"'
+                  + ' ,"value":"'+val+'"'
+                  + ' ,"requestId":"'+reqId_1+'"'
+                  + '}';
+  addLogMessage("set request: json="+set_request);
+  vehicle.send( set_request );
 }
 </script>

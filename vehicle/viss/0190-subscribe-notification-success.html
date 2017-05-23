@@ -1,25 +1,49 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Information Service Spec Test: Subscribe() Test</title>
+<title>
+[0190: receive the value continuously]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Subscribe Test: receive subscriptionNotification</h3>
-<h3> Success Condition: subscriptionNotification is received</h3>
-<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
+<div id="test-title">
+[0190: receive the value continuously]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When "subscribe" request has been successed,<br>
+ client will receive a notificaton with the JSON data object continuously.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute 'subscribe' method specifing valid information.<br>
+   (e.g. path = 'Signal.Drivetrain.Transmission.Speed')<br>
+2. Confirm 'SubscribeSuccessResponse' is returned.<br>
+3. Confirm 'SubscriptionNotification' is returned.<br>
+4. Execute 'unsubscribe' method spedifing subscriptionId obtained at Step2.<br>
+<br>
+<b>Expected Result:</b><br>
+- After 'subscribe' method succeeded, receives 'SubscriptionNotification' multiple times.<br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Subscribe test: success 01");
+// request a signal
+var reqId = "reqid-0190";
+var subId = null;
+//var path = "Signal.Drivetrain.Transmission.Speed";
+var path = SUBSCRIBE_STANDARD_PATH;
 
-var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
+// phase
 var PH_START            = 0;
 var PH_SENT_SUBSCRIBE   = 1;
 var PH_SUBSCRIBED       = 2;
@@ -29,17 +53,17 @@ var PH_END              = 5;
 
 var NOTIFICATION_COUNT  = 3;
 
-vehicle.onopen = function() {
-  // request a signal
-  var reqId = "reqid-0190";
-  var path = "Signal.Drivetrain.Transmission.Speed";
-  var notifCount = 0;
-  var phase = PH_START;
-  var subId = null;
+var notifCount = 0;
+var phase = PH_START;
 
+var t = async_test("Subscribe test: success 01");
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
+vehicle.onopen = function() {
   // process messages from the server
   vehicle.onmessage = function(event) {
     var msg = JSON.parse(event.data);
+    addLogMessage("Response: json="+event.data);
 
     if (phase == PH_START) {
       // nothing to do
@@ -64,13 +88,15 @@ vehicle.onopen = function() {
         assert_true(res, "True if subscriptionNotification received.");
         if (res){
           // after received 3 notif, send unsubscribe
-          if (notifCount > NOTIFICATION_COUNT) {
+          if (notifCount === NOTIFICATION_COUNT) {
             // do unsubscribe
-            addLogMessage("Send unsubscribe request");
-            vehicle.send('{"action":"unsubscribe"'
-                          +' ,"subscriptionId":"'+subId+'"'
-                          +' ,"requestId":"'+reqId+'"'
-                          +'}');
+            addLogMessage("<br>Send unsubscribe request");
+            var unsub_request = '{"action":"unsubscribe"'
+                               +' ,"subscriptionId":"'+subId+'"'
+                               +' ,"requestId":"'+reqId+'"'
+                               +'}';
+            addLogMessage("Unsub request: json=" + unsub_request);
+            vehicle.send( unsub_request );
             phase = PH_SENT_UNSUBSCRIBE;
           }
           addLogSuccess("subscriptionNotification received. value = " + msg.value);
@@ -81,11 +107,11 @@ vehicle.onopen = function() {
       t.step_func(function() {
         // wait for unsubscribe response
         var res = isUnsubscribeSuccessResponse(reqId, subId, msg);
-        assert_true(res, "True if unsubscribeSuccessResponse received.");
+        assert_true(res, "True if UnsubscribeSuccessResponse received.");
         if (res) {
           // unsubscibe success
           phase = PH_UNSUBSCRIBED;
-          helper_terminate_normal("subscribe/unsubscribe successed");
+          helper_terminate_normal("unsubscribe successed");
         } else if (isUnsubscribeErrorResponse(reqId, subId, msg)) {
           // unsubscribe error
           // Test has been success already. Terminate anyway.
@@ -99,13 +125,15 @@ vehicle.onopen = function() {
 
   // in case server doesn't return response
   t.step_timeout(function() {
-    if (phase < PH_SUBSCRIBED) {_
+    if (phase < PH_SUBSCRIBED) {
       helper_terminate_failure("Finish by timeout");
     }
   }, TIME_OUT_TIME);
 
   addLogMessage("<br>Send subscribe request: path="+path);
-  vehicle.send('{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  var sub_request = '{"action":"subscribe","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("Subscribe request: json="+sub_request);
+  vehicle.send(sub_request);
   phase = PH_SENT_SUBSCRIBE;
 }
 </script>

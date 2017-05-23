@@ -1,31 +1,55 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: authorize() tests</title>
+<title>
+[0080: authorize correctly]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Authorize test: authorize() success case </h3>
 
-<h3>
+
+<div id="test-title">
+[0080: authorize correctly]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a request with a correct 'authorize' action to the server,<br>
+ a JSON data object defined as 'authorizeSuccessResponse' is returned.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute 'authorize' method with valid token.<br>
+2. Confirm VISS server returns 'AuthorizeSuccessResponse' json.<br>
+<br>
+<b>Expected Result:</b><br>
+- 'AuthorizeSuccessResponse' json is received. <br>
+</div>
+
+<br>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
+
 
 <script>
-var t = async_test("authorize() success case");
+// const
+var reqId = "reqid-0080";
+var valid_token = TOKEN_VALID;
 
+var t = async_test("authorize() success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
   // request a signal
-  var reqId = "reqid-0080";
-  var valid_token = TOKEN_VALID;
-
   // process messages from the server
   vehicle.onmessage = function(event) {
-    addLogMessage("Send authorize request: tokens=" + event.data);
+    addLogMessage("Received authorize response: json=" + event.data);
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
@@ -47,6 +71,8 @@ vehicle.onopen = function() {
   addLogMessage("Send authorize request: tokens=" + valid_token);
   var tokens = JSON.stringify({"authorization"     : valid_token,
                 "www-vehicle-device": valid_token});
-  vehicle.send('{"action":"authorize","tokens":'+ tokens +' ,"requestId":"'+reqId+'"}');
+  var request_json = '{"action":"authorize","tokens":'+ tokens +' ,"requestId":"'+reqId+'"}';
+  addLogMessage("Send authorize request: json=" + request_json);
+  vehicle.send(request_json);
 }
 </script>
