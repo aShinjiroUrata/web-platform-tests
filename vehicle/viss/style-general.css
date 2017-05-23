@@ -1,0 +1,31 @@
+#test-title {
+  font-size:24px;
+  font-weight:bolder;
+  color:black;
+}
+#test-assertion {
+  font-size:18px;
+  color:black;
+  /*border:solid 1px black;
+  background-color:lightgrey;
+  margin:10px;
+  padding:5px;
+  display:block;
+  float:left;*/1
+}
+#scenario {
+  clear:both;
+  font-size:18px;
+  color:black;
+}
+#result {
+  font-size:24px;
+  font-weight:bolder;
+  color:black;
+}
+#log {
+  font-size:15px;
+  color:blue;
+  background-color:lightgrey;
+}
+

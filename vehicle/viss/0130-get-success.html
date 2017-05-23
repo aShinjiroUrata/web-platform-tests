@@ -1,31 +1,51 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: get tests</title>
+<title>
+[0130: get signals and data with a valid request without wildcards]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Get test: get success case </h3>
-<h3> Get Signal.Drivetrain.Transmission.Speed</h3>
+<div id="test-title">
+[0130: get signals and data with a valid request without wildcards]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a request with a correct 'get' action<br>
+ without wildcards to the server,<br>
+ a JSON data object defined as 'getSuccessResponse' is returned.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute 'get' method specifing a data path and requestId.<br>
+   (e.g. 'Signal.Drivetrain.Transmission.Speed')<br>
+2. Confirm 'GetSuccessResponse' containing the specified requestId.<br>
+<br>
+<b>Expected Result:</b><br>
+- Received 'GetSuccessResponse' containing specified requestId. <br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Get success case");
+var reqId = "reqid-0130";
+var path = GET_STANDARD_PATH;
 
+var t = async_test("Get success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId = "reqid-0130";
-  var path = "Signal.Drivetrain.Transmission.Speed";
-
   // process messages from the server
   vehicle.onmessage = function(event) {
+    addLogMessage("Received : json="+event.data);
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
@@ -45,6 +65,8 @@ vehicle.onopen = function() {
   }, TIME_OUT_TIME);
 
   addLogMessage("Send get request: path="+path);
-  vehicle.send('{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  var request_json = '{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("Request : json=" + request_json);
+  vehicle.send(request_json);
 }
 </script>

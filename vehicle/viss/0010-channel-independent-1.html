@@ -10,31 +10,22 @@
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<!--
-==========
-Test Assertion:
-[0010: Channel independency in an application]
-==
-When the client have more than two websocket channels connected to the server,
- the access-control state of one channel should not affect others.
-
-==========
-Test Senario:
-1. Open 2 websocket connection (wsconn1, wsconn2)<br>
-2. Execute Authorize() method in wsconn2 connection only<br>
-3. Execute an  action which requires authorize on both connections<br>
-4. Confirm the action succeeds in wsconn2 connection only<br>
--->
-
 <div id="test-title">
 [0010: Channel independency in an application]<br>
 </div>
-<div id="scenario">
 <br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client have more than two websocket channels connected to the server,<br>
+ the access-control state of one channel should not affect others.<br>
+</div>
+<br>
+<div id="scenario">
+<b>Test Scenario:</b><br>
 1. Open 2 websocket connection (wsconn1, wsconn2)<br>
 2. Execute Authorize() method in wsconn2 connection only<br>
-3. Execute an action which requires authorize on both connections<br>
-4. Confirm the Authorize() in wsconn2 doesn't affect to wsconn1<br>
+3. Execute an action which requires authorization, on both connections<br>
+4. Confirm the authorization in wsconn2 doesn't affect to wsconn1<br>
 <br>
 <b>Expected Result:</b><br>
 - wsconn1: The action fails. <br>
@@ -46,16 +37,10 @@ Test Senario:
 <div id="log"></div>
 
 <script>
-var t = async_test("channel independence test success case");
-
-var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-var wsconn2  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
-var wsconn1_opened = false;
-var wsconn2_opened = false;
-
+// const
 var valid_token = TOKEN_VALID;
 
+// phase
 var PH_0_START = 0;
 var PH_1_TWO_CONNS_ESTABLISHED = 1;
 var PH_2_TRY_ACTION_SENT = 2;
@@ -64,6 +49,12 @@ var PH_4_TRY_ACTION_SENT = 4;
 var PH_9_FINISH = 9;
 
 var phase = PH_0_START;
+var wsconn1_opened = false;
+var wsconn2_opened = false;
+
+var t = async_test("channel independence test success case");
+var wsconn1  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+var wsconn2  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 function test_main() {
 

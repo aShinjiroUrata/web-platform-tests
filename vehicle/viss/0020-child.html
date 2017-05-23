@@ -21,9 +21,6 @@
 
 // ===================
 // === Preparation ===
-
-//var t = async_test("Authorize with invalid token");
-
 var wsconn  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 var valid_token = TOKEN_VALID;
@@ -43,7 +40,6 @@ var pr_cmd = CMD_0_WAIT;
 // === Command Handler ===
 
 function child_main() {
-
   //addLogMessageBottom("----:child_main: pr_cmd = " + pr_cmd);
 
   if (pr_cmd === CMD_0_WAIT) {

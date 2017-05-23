@@ -1,58 +1,71 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: get method tests</title>
+<title>
+[0150: get signals and data with an invalid request]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<p> Get method test: error case: invalid path</p>
-<p> Get Signal.Drivetrain.Transmission.xxxxxx</p>
-<p> (* Run VISS server before starting test) </p>
+<div id="test-title">
+[0150: get signals and data with an invalid request]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a request with an incorrect 'get' action to the server,<br>
+ a JSON data object defined as 'getErrorResponse' is returned.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute 'get' method specifing *INVALID* data path and requestId.<br>
+   (e.g. path = 'Signal.Drivetrain.Transmission.abcdefg')<br>
+2. Confirm 'GetErrorResponse' containing the specified requestId is received.<br>
+<br>
+<b>Expected Result:</b><br>
+- 'GetErrorResponse' containing the specified requestId is received.<br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Get method error: invalid data path");
+var reqId = "reqid-12345";
+var path = GET_INVALID_PATH;
 
+var t = async_test("Get method error: invalid data path");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId = "reqid-12345";
-  var path = "Signal.Drivetrain.Transmission.InvalidPath";
-
   // process messages from the server
   vehicle.onmessage = t.step_func(
     function(event) {
+      addLogMessage("Response: json="+event.data);
       var msg = JSON.parse(event.data);
 
       if( isGetErrorResponse(reqId, msg) ) {
         addLogMessage("getErrorResponse received. err_number = " + msg.error.number);
         addLogSuccess("getErrorResponse returned as expected");
-        assert_true(true, "OK: error as expected: Err: "+msg.error.number+":"+msg.error.reason +", path = " +path);
+        helper_terminate_success("OK: error as expected: Err: "+msg.error.number+":"+msg.error.reason +", path = " +path);
+
       } else {
-        addLogFailure("getErrorResponse was expected");
+        helper_terminate_failure("getErrorResponse was expected");
       }
-      t.step_timeout(function() {
-        vehicle.close();
-        t.done();
-      }, TIME_FINISH_WAIT);
     }
   );
   // in case server doesn't return response
   t.step_timeout(function() {
-    addLogFailure("Fishish by timeout");
-    t.step_timeout(function() {
-      assert_true(false);
-      vehicle.close();
-      t.done();
-    }, TIME_FINISH_WAIT);
+    helper_terminate_failure("Fishish by timeout");
   }, TIME_OUT_TIME);
+
   addLogMessage("Send get request: path="+path);
-  vehicle.send('{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  var request_json = '{"action":"get","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("Request: json="+request_json);
+  vehicle.send(request_json);
 }
 </script>
