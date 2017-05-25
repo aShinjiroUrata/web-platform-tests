@@ -1,40 +1,59 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: getVSS tests</title>
+<title>
+[0110: get a VSS tree with a valid request with a wildcard]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-config.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> getVSS test: getVSS with wildcard path. success case </h3>
-<h3> Path = 'Signal.Drivetrain.InternalCombustionEngine.*'</h3>
+<div id="test-title">
+[0110: get a VSS tree with a valid request with a wildcard]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a 'getVSS' request to the server<br>
+ with a data path contains a wildcard, 'vssSuccessResponse' is returned<br>
+ which contains VSS tree matches to the wildcard data path.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute getVSS method without specifing a path<br>
+2. Confirm 'vssSuccessResponse' will be returned and it contains entire VSS tree.<br>
+<br>
+<b>Expected Result:</b><br>
+- 'VssSuccessResponse' is retruned and it contains VSS tree matches to wildcard data path. <br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("getVSS with wildcard path. success case");
+var reqId = "reqid-0110";
+var path = GETVSS_WILDCARD_PATH;
 
+var t = async_test("getVSS with wildcard path. success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId = "reqid-0110";
-  var path = "Signal.Drivetrain.InternalCombustionEngine.*";
-
   // process messages from the server
   vehicle.onmessage = function(event) {
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
       if (isVssSuccessResponse(reqId, msg)) {
-        //TODO: Does returned vss really match with the wildcard path?
+        //TODO: Need to check returned vss really match with the wildcard path?
 
         var vssStr = JSON.stringify(msg.vss).substr(1,3000);
         helper_terminate_success("getVSS response received.");
-        addLogMessage("vss = " + vssStr);
+        addLogMessage("<br>vss = " + vssStr);
       } else if (isVssErrorResponse(reqId, msg)) {
         helper_terminate_failure("getVSS method failed");
       }
@@ -47,6 +66,10 @@ vehicle.onopen = function() {
   }, TIME_OUT_TIME);
 
   addLogMessage("Send getVSS request. path = " + path);
-  vehicle.send('{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("getVSS req: json="+get_req);
+  vehicle.send(get_req);
 }
 </script>
+</html>
+

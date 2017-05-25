@@ -1,37 +1,63 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: unsubscribe tests</title>
+<title>
+[0260: end all subscription]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
-
-<!--
-Test Senario:
-1. Subscribe three datapoints.
-2. If all subscribe succeeded, send 'unsubscribeAll' request.
-3. Successfull response of 'unsubscribeAll' should arrive.
-4. Wait for certain time and confirm all the subscriptions are unsubscribed
-and no more 'subscriptionNotification' arrive.
--->
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-config.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Unsubscribe Test: unsubscribeAll test. Success case</h3>
-<h3> Success Condition: Execute three subscibe and then execute unsubscribeAll. 
-If all subscription is undone, success.</h3>
-<h3>Path1:  <span id="id_path1"></span></h3>
-<h3>Path2:  <span id="id_path2"></span></h3>
-<h3>Path3:  <span id="id_path3"></span></h3>
+<div id="test-title">
+[0260: end all subscription]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
 
-<h3>
+A client may unsubscribe from all of its subscriptions<br>
+ by sending an 'unsubscribeRequest' with the action property 'unsubscribeAll'.<br>
+In this case, specifying subscriptionId value is not needed.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Subscribe to multiple data path.(e.g. 3 or 4)<br>
+2. Confirm all subscription succeeded.<br>
+3. Send 'UnsubscribeRequest' with action='unsubscribeAll'<br>
+4. As the response, 'UnsubscribeSuccessResponse' will return.<br>
+5. Wait for a certain time and confirm all the subscriptions are unsubscribed<br>
+   and no more 'subscriptionNotification' arrive.<br>
+<br>
+<b>Expected Result:</b><br>
+- By sending 'UnsubscribeAll' request, receives 'UnsubscribeSuccessResponse'.<br>
+- After receiving 'UnsubscribeSuccessResponse', no 'SubscirbeNotivication' will not reach.<br>
+</div>
+
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Unsubscribe Test: unsubscribeAll test. Success case");
+var reqId1 = "reqid-0261";
+var reqId2 = "reqid-0262";
+var reqId3 = "reqid-0263";
+var subSuccess1 = false;
+var subSuccess2 = false;
+var subSuccess3 = false;
 
-var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+var reqId_unsubAll = "reqid-0264";
+var subId = null;
+var invalidSubId = "12345678";
 
+var path1 = SUBSCRIBE_PATH_1;
+var path2 = SUBSCRIBE_PATH_2;
+var path3 = SUBSCRIBE_PATH_3;
+
+// phase
 var PH_START            = 0;
 var PH_SENT_SUBSCRIBE   = 1;
 var PH_SUBSCRIBED       = 2;
@@ -39,39 +65,21 @@ var PH_SENT_UNSUBSCRIBE = 3;
 var PH_UNSUBSCRIBED     = 4;
 var PH_END              = 5;
 
-var NOTIFICATION_COUNT  = 3;
+var TIME_CONFIRM_SUB_NOTIF = 1000;
+var TIME_WAIT_SUB_NOTIF_END = 500;
+var TIME_CONFIRM_UNSUBSCRIBED = 1000;
 
-var TIME_MORATRIUM = 2000;
-var TIME_CONFIRM_UNSUBSCRIBEALL = 2000;
+var phase = PH_START;
+var bNothingHasCome = true;
+
+var t = async_test("Unsubscribe Test: unsubscribeAll test. Success case");
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId1 = "reqid-0261";
-  var reqId2 = "reqid-0262";
-  var reqId3 = "reqid-0263";
-  var reqId_unsubAll = "reqid-0264";
-
-  var path1 = "Signal.Drivetrain.Transmission.Speed";
-  var path2 = "Signal.Drivetrain.InternalCombustionEngine.RPM";
-  var path3 = "Signal.Chassis.SteeringWheel.Angle";
-
-  var notifCount = 0;
-  var phase = PH_START;
-  var subId = null;
-  var invalidSubId = "12345678";
-
-  var subSuccess1 = false;
-  var subSuccess2 = false;
-  var subSuccess3 = false;
-
-  var bNothingHasCome = true;
-
-  document.getElementById("id_path1").innerText = path1;
-  document.getElementById("id_path2").innerText = path2;
-  document.getElementById("id_path3").innerText = path3;
 
   // process messages from the server
   vehicle.onmessage = function(event) {
+    addLogMessage("Response: json="+ event.data);
     var msg = JSON.parse(event.data);
 
     // subscirbe has sent
@@ -94,44 +102,50 @@ vehicle.onopen = function() {
         }
 
         if (subSuccess1 && subSuccess2 && subSuccess3) {
-          addLogMessage("All subscribe succeeded.");
-          addLogMessage("Send unsubscribeAll request");
-          vehicle.send('{"action":"unsubscribeAll"'
-                        +' ,"requestId":"'+reqId_unsubAll+'"}');
-          addLogMessage( "unsubscribeAll request has been sent." );
           phase = PH_SENT_UNSUBSCRIBE;
 
-          // Set timeout for unsubscribeAll request
+          // wait some time before execute 'unsubscribeAll' to confirm subscriptionNotification comes
           t.step_timeout(function() {
-            if (phase < PH_UNSUBSCRIBED) {
-              helper_terminate_failure("Finish by timeout. Response for unsubscribeAll not returned.");
-            }
-          }, TIME_OUT_TIME);
 
+            addLogMessage("All subscribe succeeded.");
+            addLogMessage("<br>Send unsubscribeAll request");
+            var unsub_req = '{"action":"unsubscribeAll"'
+                           +' ,"requestId":"'+reqId_unsubAll+'"}';
+            addLogMessage("unsubscribeAll req: json="+unsub_req);
+            vehicle.send(unsub_req);
+
+            // Set timeout for unsubscribeAll request
+            t.step_timeout(function() {
+              if (phase < PH_UNSUBSCRIBED) {
+                helper_terminate_failure("Finish by timeout. Response for unsubscribeAll not returned.");
+              }
+            }, TIME_OUT_TIME);
+          }, TIME_CONFIRM_SUB_NOTIF);
         }
+
       })();
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
-        // wait for unsubscribe response
-        addLogMessage(JSON.stringify(msg));
-        var res = isUnsubscribeAllSuccessResponse(reqId_unsubAll, msg);
 
-        if (res) {
+        if (isUnsubscribeAllSuccessResponse(reqId_unsubAll, msg)) {
           addLogMessage( "UnsubscribeSuccess response received." );
           // unsubscibe success
-          assert_true(res, "unsubscribeAll success response received.");
+          assert_true(true, "unsubscribeAll success response received.");
           phase = PH_UNSUBSCRIBED;
 
           // wait for remaining subscriptionNotification exhaustion
+          addLogMessage( "<br>Wait some time for remaining subscriptionNotification exhaust." );
           t.step_timeout(function() {
             // wait for some time and no subscriptionNotifcation has reached
             // judge as unsubscribeAll succeeded
+            addLogMessage( "<br>Wait some time to confirm no more subscriptionNotification will come." );
             t.step_timeout(function() { // wait for confirmation time
               if (bNothingHasCome) {
+                addLogMessage("Test Success: unsubscribeAll success");
                 helper_terminate_success("unsubscribeAll success");
               }
-            }, TIME_CONFIRM_UNSUBSCRIBEALL);
-          }, TIME_MORATRIUM);
+            }, TIME_CONFIRM_UNSUBSCRIBED);
+          }, TIME_WAIT_SUB_NOTIF_END);
 
         } else if (isUnsubscribeErrorResponse(reqId_unsubAll, "", msg)) {
           addLogMessage( "UnsubscribeError response received." );
@@ -150,8 +164,8 @@ vehicle.onopen = function() {
       // TODO: changed to better judgement cliteria
 
       t.step_func(function() {
-        var bNotifSuccess = isSubscriptionNotificationResonse( "", msg);
-        var bNotifError = isSubscriptionNotificationErrorResponse( "", msg);
+        var bNotifSuccess = isSubscriptionNotificationResponse( "", msg);
+        var bNotifError   = isSubscriptionNotificationErrorResponse( "", msg);
 
         if (bNotifSuccess || bNotifError) {
           // subscriptionNotification arrived. unsubscribeAll was not succeeded
@@ -163,14 +177,19 @@ vehicle.onopen = function() {
       })();
     }
   }
-  addLogMessage("Send subscribe request: path1="+ path1);
-  vehicle.send('{"action":"subscribe","path":"'+ path1 +'" ,"requestId":"'+reqId1+'"}');
+  var sub_req_1 = '{"action":"subscribe","path":"'+ path1 +'" ,"requestId":"'+reqId1+'"}';
+  addLogMessage("subscribe req1: json="+ sub_req_1);
+  vehicle.send( sub_req_1 );
 
-  addLogMessage("Send subscribe request: path2="+ path2);
-  vehicle.send('{"action":"subscribe","path":"'+ path2 +'" ,"requestId":"'+reqId2+'"}');
+  var sub_req_2 = '{"action":"subscribe","path":"'+ path2 +'" ,"requestId":"'+reqId2+'"}';
+  addLogMessage("subscribe req2: json="+ sub_req_2);
+  vehicle.send( sub_req_2 );
 
-  addLogMessage("Send subscribe request: path3="+path3);
-  vehicle.send('{"action":"subscribe","path":"'+ path3 +'" ,"requestId":"'+reqId3+'"}');
+  var sub_req_3 = '{"action":"subscribe","path":"'+ path3 +'" ,"requestId":"'+reqId3+'"}';
+  addLogMessage("subscribe req3: json="+ sub_req_3);
+  vehicle.send( sub_req_3 );
+
+  addLogMessage("");
 
   phase = PH_SENT_SUBSCRIBE;
 
@@ -183,4 +202,5 @@ vehicle.onopen = function() {
 
 }
 </script>
+</html>
 

@@ -1,41 +1,69 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: getVSS tests</title>
+<title>
+[0100: get a VSS tree with a valid request without wildcards]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-config.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> getVSS test: getVSS success case </h3>
-<h3> Path = 'Signal.Drivetrain.InternalCombustionEngine.RPM'</h3>
+<div id="test-title">
+[0100: get a VSS tree with a valid request without wildcards]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a 'getVSS' request to the server<br>
+ with a data path which does not include wildcards, <br>
+ 'vssSuccessResponse' is returned.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute getVSS method specifing a path without wildcard<br>
+   (e.g. Path = 'Signal.Drivetrain.InternalCombustionEngine.RPM')<br>
+2. Confirm 'vssSuccessResponse' will be returned.<br>
+<br>
+<b>Expected Result:</b><br>
+- 'VssSuccessResponse' is returned and it contains VSS tree matches with specified data path. <br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("getVSS success case");
+// const
+var reqId = "reqid-0100";
+var path = GETVSS_STANDARD_PATH;
 
+var t = async_test("getVSS success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId = "reqid-0100";
-  var path = "Signal.Drivetrain.InternalCombustionEngine.RPM";
-
   // process messages from the server
   vehicle.onmessage = function(event) {
+    //addLogMessage("Response: json="+event.data);
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
       if (isVssSuccessResponse(reqId, msg)) {
-        //TODO: Does returned vss really match with the wildcard path?
         var vssStr = JSON.stringify(msg.vss).substr(1,3000);
-        helper_terminate_success("getVSS response received.");
-        addLogMessage("vss = " + vssStr);
-      } else if (isVssErrorResponse(reqId, msg)) {
-        helper_terminate_failure("getVSS method failed");
+        addLogMessage("<br>vss = " + vssStr);
+
+        //TODO: Need to chack returned vss really match with the specified path?
+        if ( verifyVssAndPath(vssStr, path) ) {
+          // Vss and Path matched. Test Success
+          helper_terminate_success("received VSS tree matched with requested path. Right behavior.");
+        } else {
+          helper_terminate_failure("received VSS tree doesn't match with requested path. Wrong behavior.");
+        }
+      } else {
+        helper_terminate_failure("vssErrorResponse returned. Wrong behavior.");
       }
     })();
   }
@@ -46,6 +74,42 @@ vehicle.onopen = function() {
   }, TIME_OUT_TIME);
 
   addLogMessage("Send getVSS request. path = " + path);
-  vehicle.send('{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("getVSS req: json="+get_req);
+  vehicle.send(get_req);
 }
+
+function verifyVssAndPath ( _vssTree, _path) {
+
+  /* vssTreeが、pathとマッチするか確認。どうやる？
+     - 指定のpathが含まれていること
+     - 指定path以外のデータが含まれないこと？
+     - 指定pathがVSSに存在しない場合は？
+
+  */
+
+  // ツリーをrootからひとつづつたどっていく？
+
+
+
+  return true; //stub
+}
+
+function verifyVssAndWildcardPath (_vssTree, _path) {
+  // wildcardの場合、なにが含まれていればOK？
+
+  // * 
+
+  return true; //stub
+}
+
+function verifyIfEntireVssTree(_vssTree) {
+　// entire treeの場合、どうやってentire tree と判断する？
+
+  return true; //stub
+}
+
+
 </script>
+</html>
+

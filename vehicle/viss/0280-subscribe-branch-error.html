@@ -1,24 +1,42 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: subscribe() test</title>
+<title>
+[0280: filter error]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-config.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Subscribe Test: subscribe path=branch(not leaf) error</h3>
-<h3> Subscribe Signal.Drivetrain.Transmission</h3>
+<div id="test-title">
+[0280: filter error]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+If the client sends subscribe with filters option to VSS *BRANCHES*(not leaves),
+ the client receieves an subscribeErrorResponse.
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute Subscribe method for a 'branch' data path.<br>
+   (e.g. 'Signal.Drivetrain.Transmission')<br>
+2. Client will receive 'SubscribeErrorResponse'.<br>
+<br>
+<b>Expected Result:</b><br>
+- Receive 'SubscribeErrorResponse'<br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Subscribe test: subscribe path=branch error ");
-
-var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
+// phase
 var PH_START            = 0;
 var PH_SENT_SUBSCRIBE   = 1;
 var PH_SUBSCRIBED       = 2;
@@ -26,23 +44,15 @@ var PH_SENT_UNSUBSCRIBE = 3;
 var PH_UNSUBSCRIBED     = 4;
 var PH_END              = 5;
 
-var NOTIFICATION_COUNT  = 3;
-
 var reqId = "reqid-0280";
-//var path = "Signal.Drivetrain.Transmission.Speed";
-var path = "Signal.Drivetrain.Transmission"; // path is branch. not a leaf.
-var notifCount = 0;
-var phase = PH_START;
 var subId = null;
+var path = SUBSCRIBE_BRANCH_PATH;
 
-var notifCount = 0;
-var notif = [];
-
-var intervalTime   = 1000; //msec
-var intervalMargin = 1;    //%
-var range_above    = 100;  //km/h
-var range_below    = 20;   //km/h
-var minChangeVal   = 5;    //km/h
+var intervalTime   = INTERVAL_TIME
+var intervalMargin = INTERVAL_MARGIN;
+var range_above    = RANGE_ABOVE;
+var range_below    = RANGE_BELOW;
+var minChangeVal   = MINCHANGE_VAL;
 
 var filter_interval = {};
 filter_interval.interval = intervalTime;
@@ -59,10 +69,16 @@ filter_mixed.interval = intervalTime;
 filter_mixed.range = objRange;
 filter_mixed.minChange = minChangeVal;
 
+var phase = PH_START;
+
+var t = async_test("Subscribe test: subscribe for a 'branch' path should fail");
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
 vehicle.onopen = function() {
   // process messages from the server
   vehicle.onmessage = t.step_func(
     function(event) {
+      addLogMessage("Response: json="+event.data);
       var msg = JSON.parse(event.data);
 
       if (phase == PH_START) {
@@ -70,16 +86,13 @@ vehicle.onopen = function() {
       } else if (phase == PH_SENT_SUBSCRIBE) {
         // wait for subscribe response
         if (isSubscribeSuccessResponse(reqId, msg)) {
-          helper_terminate_failure("subscribeSuccessResponse received. <br>Subscribe for 'branch' should be rejected.");
+          helper_terminate_failure("subscribeSuccessResponse received. Wrong behavior.");
           subId = msg.subscriptionId
           phase = PH_SUBSCRIBED;
         } else if (isSubscribeErrorResponse(reqId, msg)) {
           helper_terminate_success("subscribeErrorResponse received. Right behavior.");
           phase = PH_END;
-        } else {
-          // ignore this case
         }
-
       } else if (phase == PH_SUBSCRIBED) {
         // wait subscriptionNotification
 
@@ -92,18 +105,20 @@ vehicle.onopen = function() {
 
   // in case server doesn't return response
   t.step_timeout(function() {
-    if (phase < PH_SUBSCRIBED) {_
+    if (phase < PH_SUBSCRIBED) {
       helper_termintate_failure("Finish by timeout");
     }
   }, TIME_OUT_TIME);
 
-
-  addLogMessage("Send subscribe request: path= "+path+", filter= " + JSON.stringify(filter_interval) + "<br>");
-  vehicle.send('{"action":"subscribe","path":"'+ path +'"'
-                +',"requestId":"'+reqId+'"'
-                +',"filters":'+ JSON.stringify(filter_interval) +'}');
+  addLogMessage("Send subscribe request: path= "+path+", filter= " + JSON.stringify(filter_interval));
+  var sub_req = '{"action":"subscribe","path":"'+ path +'"'
+               +',"requestId":"'+reqId+'"'
+               +',"filters":'+ JSON.stringify(filter_interval) +'}';
+  addLogMessage("sub request: json="+sub_req);
+  vehicle.send(sub_req);
 
   phase = PH_SENT_SUBSCRIBE;
 }
 </script>
+</html>
 
