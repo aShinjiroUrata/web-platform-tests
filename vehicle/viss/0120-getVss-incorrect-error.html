@@ -1,29 +1,47 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Signal Server Spec Test: getVSS tests</title>
+<title>
+[0120: get a VSS tree with an invalid request]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-config.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> getVSS test: incorrect path error case </h3>
-<h3> Path = 'Signal.Drivetrain.InternalCombustionEngine.WrongName'</h3>
+<div id="test-title">
+[0120: get a VSS tree with an invalid request]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+When the client makes a request with an incorrect 'getVSS' action to the server,<br>
+ a JSON data object defined as 'vssErrorResponse' is returned.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute getVSS method with invalid data path<br>
+2. Confirm 'vssErrorResponse' will be returned<br>
+<br>
+<b>Expected Result:</b><br>
+- 'VssErrorResponse' is retruned <br>
+</div>
 
-<h3>
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("getVSS success case");
+var reqId = "reqid-0100";
+var path = GETVSS_INVALID_PATH;
 
+var t = async_test("getVSS success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
-  // request a signal
-  var reqId = "reqid-0100";
-  var path = "Signal.Drivetrain.InternalCombustionEngine.WrongName";
-
   // process messages from the server
   vehicle.onmessage = function(event) {
     var msg = JSON.parse(event.data);
@@ -31,10 +49,10 @@ vehicle.onopen = function() {
 
       if (isVssSuccessResponse(reqId, msg)) {
         var vssStr = JSON.stringify(msg.vss).substr(1,3000);
-        helper_terminate_failure("vssSuccessResponse received. vssErrorResponse should have returned.");
-        addLogMessage("vss = " + vssStr);
-      } else if (isVssErrorResponse(reqId, msg)) {
-        helper_terminate_success("vssErrorResponse received. Right behavior ");
+        helper_terminate_failure("vssSuccessResponse received. Wrong behavior");
+        addLogMessage("<br>vss = " + vssStr);
+      } else {
+        helper_terminate_success("vssErrorResponse received. Right behavior");
         //TODO: show error detail
       }
     })();
@@ -46,6 +64,9 @@ vehicle.onopen = function() {
   }, TIME_OUT_TIME);
 
   addLogMessage("Send getVSS request. path = " + path);
-  vehicle.send('{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}');
+  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("getVSS req: json"+get_req)
+  vehicle.send(get_req);
 }
 </script>
+</html>

@@ -1,25 +1,43 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
-<title>Vehicle Information Service Spec Test: Subscribe() Test</title>
+<title>
+[0290: filter interval]
+</title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
+<link rel="stylesheet" type="text/css" href="./style-general.css">
 
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
+<script src="./vehicle-test-config.js"></script>
 <script src="./vehicle-test-helper.js"></script>
 
-<h3> Subscribe Test: Filter:interval test</h3>
-<h3> Success Condition: subscribe with filter=interval</h3>
-<h3> Subscribe Signal.Drivetrain.Transmission.Speed</h3>
 
-<h3>
+<div id="test-title">
+[0290: filter interval]
+</div>
+<br>
+<div id="test-assertion">
+<b>Test assertion:</b><br>
+According to the specified interval of the signal in the client,<br>
+ data are transferred from the server to the client every that interval.<br>
+</div>
+<div id="scenario">
+<br>
+<b>Test Scenario:</b><br>
+1. Execute Subscribe method to a data path with specifing 'interval' time as filter.<br>
+2. Client will receive 'SubscriptionNotification' by specified interval time.<br>
+<br>
+<b>Expected Result:</b><br>
+- Receive 'SubscriptionNotification' by specified interval time <br>
+</div>
+
+<div id="result"></div>
+<br>
 <div id="log"></div>
-</h3>
 
 <script>
-var t = async_test("Subscribe test: subscribe with filter=interval");
 
-var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
+// phase
 var PH_START            = 0;
 var PH_SENT_SUBSCRIBE   = 1;
 var PH_SUBSCRIBED       = 2;
@@ -30,27 +48,31 @@ var PH_END              = 5;
 var NOTIFICATION_COUNT  = 5;
 
 var reqId = "reqid-0290";
-var path = "Signal.Drivetrain.Transmission.Speed";
+var path = SUBSCRIBE_STANDARD_PATH;
 var phase = PH_START;
 var subId = null;
 
 var notifCount = 0;
 var notif = [];
 
-var intervalTime   = 1000; //msec
-var intervalMargin = 1;    //%
-var range_above    = 100;  //km/h
-var range_below    = 20;   //km/h
-var minChangeVal   = 5;    //km/h
+var intervalTime   = INTERVAL_TIME
+var intervalMargin = INTERVAL_MARGIN;
+var range_above    = RANGE_ABOVE;
+var range_below    = RANGE_BELOW;
+var minChangeVal   = MINCHANGE_VAL;
 
 var filter_interval = '{"interval":' + intervalTime + '}';
 var filter_range = '{"range": {"above":' + range_above + ', "below":'+range_below + '}';
 var filter_minChange = '{"range": {"minChange":' + minChangeVal + '}';
 
+var t = async_test("Subscribe test: subscribe with filter=interval");
+var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
+
 vehicle.onopen = function() {
 
   // process messages from the server
   vehicle.onmessage = function(event) {
+    addLogMessage("Response: json="+event.data);
     var ts = getTimestamp();
     var msg = JSON.parse(event.data);
 
@@ -79,10 +101,12 @@ vehicle.onopen = function() {
           if (notifCount > NOTIFICATION_COUNT) {
             // do unsubscribe
             addLogMessage("Send unsubscribe request");
-            vehicle.send('{"action":"unsubscribe"'
+            var unsub_req ='{"action":"unsubscribe"'
                           +' ,"subscriptionId":"'+subId+'"'
                           +' ,"requestId":"'+reqId+'"'
-                          +'}');
+                          +'}';
+            addLogMessage("unsubscribe req: json="+unsub_req);
+            vehicle.send(unsub_req);
             phase = PH_SENT_UNSUBSCRIBE;
           }
           notif[notifCount] = {};
@@ -102,7 +126,7 @@ vehicle.onopen = function() {
         assert_true(res, "True if unsubscribeSuccessResponse received.");
         if (res) {
           // unsubscibe success
-          addLogMessage("subscribe/unsubscribe successed");
+          addLogMessage("unsubscribe successed");
         } else if (isUnsubscribeErrorResponse(reqId, subId, msg)) {
           // unsubscribe error
           // Test has been success already. Terminate anyway.
@@ -138,15 +162,17 @@ vehicle.onopen = function() {
   );
 
   addLogMessage("Send subscribe request: path= "+path+", filter= " + filter_interval+ "<br>");
-  vehicle.send('{"action":"subscribe","path":"'+ path +'"'
+  var sub_req = '{"action":"subscribe","path":"'+ path +'"'
                 +',"requestId":"'+reqId+'"'
-                +',"filters":'+filter_interval+'}');
- 
+                +',"filters":'+filter_interval+'}';
+  addLogMessage("sub request: json="+sub_req);
+  vehicle.send(sub_req);
+
   phase = PH_SENT_SUBSCRIBE;
 }
 
 // verify time diff with intervalTime
-// (tolerate margin of <intervalMargin>%)
+// (tolerate margin of <intervalMargin>)
 function verifyInterval( notif1, notif2) {
   var diff = notif2.timestamp - notif1.timestamp;
   if ( diff > intervalTime * ((100+intervalMargin)/100)) {
@@ -163,4 +189,5 @@ function verifyInterval( notif1, notif2) {
 }
 
 </script>
+</html>
 
