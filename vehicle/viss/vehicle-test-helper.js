@@ -1,17 +1,6 @@
 /*
-Preparation
-
-configure VISS server's information
-VISS_HOST : host name or IP address
-
-TODO:...
-
-
-Configure TOKEN_VALID and TOKEN_INVALID those are
- recognized as valid and invalid security tokens.
-
+** Vehicle API Test helper/utility functions
 */
-
 
 // === get helper ===
 function isAuthorizeSuccessResponse( _reqId, _inJson) {
