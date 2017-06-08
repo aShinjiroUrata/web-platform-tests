@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <meta charset="utf-8">
 <title>
-[0100: get a VSS tree with a valid request without wildcards]
+[0100: get a VSS tree with a valid request]
 </title>
 <link rel="help" href="https://www.w3.org/TR/vehicle-information-service/#idl-def-getrequest">
 <link rel="stylesheet" type="text/css" href="./style-general.css">
@@ -12,7 +12,7 @@
 <script src="./vehicle-test-helper.js"></script>
 
 <div id="test-title">
-[0100: get a VSS tree with a valid request without wildcards]
+[0100: get a VSS tree with a valid request]
 </div>
 <br>
 <div id="test-assertion">
@@ -20,13 +20,19 @@
 When the client makes a 'getVSS' request to the server<br>
  with a data path which does not include wildcards, <br>
  'vssSuccessResponse' is returned.<br>
+# Spec changed: 'getVSS' does not support wildcards.
 </div>
 <div id="scenario">
 <br>
 <b>Test Scenario:</b><br>
-1. Execute getVSS method specifing a path without wildcard<br>
+1. Execute 'getVSS' method specifing a 'path'<br>
    (e.g. Path = 'Signal.Drivetrain.InternalCombustionEngine.RPM')<br>
 2. Confirm 'vssSuccessResponse' will be returned.<br>
+3. Confirm the obtained VSS matches with specified 'path'<br>
+   (To confirm, create 'answer' VSS by below steps.<br>
+    - Get 'full VSS' tree.<br>
+    - Extract the 'answer' VSS from 'full VSS' with 'path' string.<br>
+    - Compare getVSS result and 'answer' VSS. If matches, test success.)<br>
 <br>
 <b>Expected Result:</b><br>
 - 'VssSuccessResponse' is returned and it contains VSS tree matches with specified data path. <br>
@@ -38,7 +44,14 @@ When the client makes a 'getVSS' request to the server<br>
 
 <script>
 // const
-var reqId = "reqid-0100";
+var reqId_0 = "reqid-0100"; // getVSS for entire tree
+var reqId_1 = "reqid-0101"; // getVSS with path spedified
+var objVssAll = null;
+var strVssAll = null;
+var objVssPart = null;
+var strVssPart = null;
+var strVssCorrect = null;
+
 var path = GETVSS_STANDARD_PATH;
 
 var t = async_test("getVSS success case");
@@ -51,19 +64,35 @@ vehicle.onopen = function() {
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
-      if (isVssSuccessResponse(reqId, msg)) {
-        var vssStr = JSON.stringify(msg.vss).substr(1,3000);
-        addLogMessage("<br>vss = " + vssStr);
+      // Received full VSS tree
+      if (isVssSuccessResponse(reqId_0, msg)) {
+        objVssAll = msg.vss;
+        strVssAll = JSON.stringify(msg.vss);
+        //addLogMessage("<br>get vss all = " + strVssAll.substr(1,200));
+      }
 
-        //TODO: Need to chack returned vss really match with the specified path?
-        if ( verifyVssAndPath(vssStr, path) ) {
-          // Vss and Path matched. Test Success
+      // Received partial VSS tree
+      if (isVssSuccessResponse(reqId_1, msg)) {
+        var objVssPart = msg.vss;
+        var strVssPart = JSON.stringify(msg.vss);
+        addLogMessage("<br>getVSS result vss = " + strVssPart);
+      }
+
+      // Enter to 'Verify' stage
+      if (strVssAll != null && strVssPart != null) {
+
+        // extract partial tree that corresponds to 'path'
+        addLogMessage("<br>try extractPartialVss " );
+        objVssCorrect = extractPartialVss(objVssAll, path);
+        addLogMessage("<br>'answer' vss = " + JSON.stringify(objVssCorrect));
+
+        // If two VSS matches, regard that VSS tree obtained with getVSS() is correct.
+        var res = compareVss(objVssPart, objVssCorrect);
+        if (res) {
           helper_terminate_success("received VSS tree matched with requested path. Right behavior.");
         } else {
           helper_terminate_failure("received VSS tree doesn't match with requested path. Wrong behavior.");
         }
-      } else {
-        helper_terminate_failure("vssErrorResponse returned. Wrong behavior.");
       }
     })();
   }
@@ -73,43 +102,118 @@ vehicle.onopen = function() {
     helper_terminate_failure("Fishish by timeout");
   }, TIME_OUT_TIME);
 
+  // path = ''. Request 'Full VSS'
+  addLogMessage("Send getVSS request. path = ''");
+  var get_req = '{"action":"getVSS","path":"","requestId":"'+reqId_0+'"}';
+  addLogMessage("getVSS req: json="+get_req);
+  vehicle.send(get_req);
+
+  // Request parital VSS by specifying 'path'
   addLogMessage("Send getVSS request. path = " + path);
-  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId_1+'"}';
   addLogMessage("getVSS req: json="+get_req);
   vehicle.send(get_req);
 }
 
-function verifyVssAndPath ( _vssTree, _path) {
+// == extract partial vss from full-vss-tree by specifying 'path'
+// == ## copied from ACS VISS implementation visSvr.js
+function extractPartialVss(_objVssAll, _strPath) {
 
-  /* vssTreeが、pathとマッチするか確認。どうやる？
-     - 指定のpathが含まれていること
-     - 指定path以外のデータが含まれないこと？
-     - 指定pathがVSSに存在しない場合は？
+  //path type to consider
+  // a. standard path (e.g.  'Signal.Drivetrain.InternalCombustionEngine.RPM')
+  // b. harfway path  (e.g.  'Signal.Drivetrain.InternalCombustionEngine')
+  // c. irregular path (e.g. 'Signal.Drivetrain.badname')
+  // #getVSS doesn't support wildcard path
 
-  */
+  //Procedure
+  // - Separate _strPath with delimiter '.'
+  // - Traverse '_objVssAll' from root and try to find each nodes in _strPath
+  // - If succeed to find every nodes in _strPath, the data path is included in full VSS
+  // - Extract the partial VSS tree that matches with _strPath, from full VSS
+  // - Return the partial VSS tree
 
-  // ツリーをrootからひとつづつたどっていく？
+  // if path is empty, return full VSS tree
+  if (_strPath == '' || _strPath == undefined || _strPath == null)
+    return _objVssAll;
 
+  // separate 'path' with '.' as delimiter
+  var nodeNames = _strPath.split(".");
+  var pathLen = nodeNames.length;
+  var allTree = _objVssAll;
+  var allTreePtr = null;  // pointer for traverse 'allTree'
+  allTreePtr = allTree;
 
+  var resultTree = {};
+  var resultTreePtr = resultTree; // pointer for traverse 'resultTree'
 
-  return true; //stub
+  for (var i=0; i<pathLen; i++) {
+    var node = nodeNames[i];
+    if (allTreePtr[node] == undefined) {
+      // One of node in 'path' is not found in full VSS tree
+      // hence 'extract' fail. Return null.
+      return null;
+    }
+
+    // The 'node' is found in full VSS tree.
+    console.log("Node:["+node+"] exists");
+    var nextNode = allTreePtr[node];
+
+    // Add copy of current Node to 'resultTree' for creating vss tree to return
+    resultTreePtr[node] = Object.assign({},nextNode); // Object.assign() copies an object
+
+    // If this is the last round of loop, just return resultTree and finish
+    if (i == pathLen-1) {
+      console.log("<br>SUCCESS: reached to the end");
+      console.log("res = " + JSON.stringify(resultTree));
+      return resultTree;
+    }
+
+    // Prepare for next loop round
+
+    // Move allTreePtr position
+    if (nextNode['children'] != undefined) {
+      console.log("children exists. Go next loop.");
+      allTreePtr = nextNode['children'];
+    } else {
+      // In case current 'node' doesn't have 'children'
+      // which means 'leaf' or 'irregular node'.
+      console.log("No children. Go next loop");
+      allTreePtr = nextNode;
+    }
+
+    // Move resultTreePtr position
+    var tmpObj = null;
+    if (resultTreePtr[node]['children']) {
+      // Empty 'children' node to delete unnecessary children
+      // Necessary child will be added in next round
+      resultTreePtr[node]['children'] = {};
+      tmpObj = resultTreePtr[node]['children'];
+
+    } else {
+      tmpObj = resultTreePtr[node];
+    }
+    resultTreePtr = tmpObj;
+  }
 }
 
-function verifyVssAndWildcardPath (_vssTree, _path) {
-  // wildcardの場合、なにが含まれていればOK？
+// == Compare two VSS trees
+function compareVss(_objVssA, _objVssB) {
 
-  // * 
+  // As simple strategy, stringify and compare as strings
+  // - In this case, it matches only when both trees are fully identical
+  // - [TODO] Might be OK to consider as 'matched'
+  //          even when lacking less important properties
+  var strA = JSON.stringify(_objVssA);
+  var strB = JSON.stringify(_objVssB);
 
-  return true; //stub
+  if (strA === strB) {
+    addLogMessage("<br>SUCCESS: The getVSS result matched with 'answer' vss.");
+    return true;
+  } else {
+    addLogMessage("<br>FAILURE: The getVSS result not matched with 'answer' vss.");
+    return false;
+  }
 }
-
-function verifyIfEntireVssTree(_vssTree) {
-　// entire treeの場合、どうやってentire tree と判断する？
-
-  return true; //stub
-}
-
 
 </script>
 </html>
-
