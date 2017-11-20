@@ -65,8 +65,12 @@ var PH_SENT_UNSUBSCRIBE = 3;
 var PH_UNSUBSCRIBED     = 4;
 var PH_END              = 5;
 
+// Wait time to confirm SubscriptionNotification will be received.
 var TIME_CONFIRM_SUB_NOTIF = 1000;
+// Time to wait for all of remaining SubscriptionNotification will be received.
 var TIME_WAIT_SUB_NOTIF_END = 500;
+// Time to confirm all the subscription has been really unsubscribed.
+// (If no more SubscriptionNotification comes, regard as unsubscribeAll succeeded.)
 var TIME_CONFIRM_UNSUBSCRIBED = 1000;
 
 var phase = PH_START;
@@ -101,6 +105,7 @@ vehicle.onopen = function() {
           subSuccess3 = true;
         }
 
+        // If all the Subscribe requests turned out successful, go to next phase
         if (subSuccess1 && subSuccess2 && subSuccess3) {
           phase = PH_SENT_UNSUBSCRIBE;
 
@@ -126,6 +131,19 @@ vehicle.onopen = function() {
       })();
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
+
+        // Ignore SubscriptionNotificationResponse/ErrorResponse
+        //  comming before UbsubscribeAll response reached.
+        var res1 = isSubscriptionNotificationResponse(subId, msg);
+        if (res1) {
+          addLogMessage("Ignore SubscriptionNotificationResponse.");
+          return;
+        }
+        var res2 = isSubscriptionNotificationErrorResponse(subId, msg);
+        if (res2) {
+          addLogMessage("Ignore SubscriptionNotificationErrorResponse.");
+          return;
+        }
 
         if (isUnsubscribeAllSuccessResponse(reqId_unsubAll, msg)) {
           addLogMessage( "UnsubscribeSuccess response received." );
@@ -168,7 +186,9 @@ vehicle.onopen = function() {
         var bNotifError   = isSubscriptionNotificationErrorResponse( "", msg);
 
         if (bNotifSuccess || bNotifError) {
-          // subscriptionNotification arrived. unsubscribeAll was not succeeded
+          // Even after received UnsubscribeAllSuccessResponse received,
+          //  subscriptionNotificationResponse/ErrorResponse received.
+          // Judge this as unsubscribeAll did not work effectively.
           bNothingHasCome = false;
           addLogMessage( "Some subscriptionNotification message reached event after unsubscribeAll done." );
           helper_terminate_failure("unsubscribeAll failed");
@@ -177,6 +197,8 @@ vehicle.onopen = function() {
       })();
     }
   }
+
+  // Send Subscribe requests
   var sub_req_1 = '{"action":"subscribe","path":"'+ path1 +'" ,"requestId":"'+reqId1+'"}';
   addLogMessage("subscribe req1: json="+ sub_req_1);
   vehicle.send( sub_req_1 );
