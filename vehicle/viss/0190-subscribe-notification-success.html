@@ -107,9 +107,19 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
         // wait for unsubscribe response
-        var res = isUnsubscribeSuccessResponse(reqId, subId, msg);
-        assert_true(res, "True if UnsubscribeSuccessResponse received.");
-        if (res) {
+        var res1 = isSubscriptionNotificationResponse(subId, msg);
+        if (res1) {
+          addLogMessage("Ignore SubscriptionNotificationResponse.");
+          return;
+        }
+        var res2 = isSubscriptionNotificationErrorResponse(subId, msg);
+        if (res2) {
+          addLogMessage("Ignore SubscriptionNotificationErrorResponse.");
+          return;
+        }
+        var res3 = isUnsubscribeSuccessResponse(reqId, subId, msg);
+        assert_true(res3, "True if UnsubscribeSuccessResponse received.");
+        if (res3) {
           // unsubscibe success
           phase = PH_UNSUBSCRIBED;
           helper_terminate_normal("unsubscribe successed");
