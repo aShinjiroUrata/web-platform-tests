@@ -101,13 +101,15 @@ vehicle.onopen = function() {
           addLogMessage("Ignore SubscriptionNotificationErrorResponse.");
           return;
         }
-        var res3 = isUnsubscribeSuccessResponse(reqId, subId, msg);
-        assert_true(res3, "True if unsubscribeSuccessResponse received.");
-        if (res3) {
+        if (msg.action !== 'unsubscribe') {
+          addLogMessage("Ignore messages except for UnsubscirbeSuccessResponse/ErrorResonse.");
+          return;
+        }
+        if (isUnsubscribeSuccessResponse(reqId, subId, msg)) {
           // unsubscibe success
           phase = PH_UNSUBSCRIBED;
           helper_terminate_normal("unsubscribeSuccessResponse received");
-        } else {
+        } else if (isUnsubscribeErrorResponse(reqId, subId, msg)) {
           // unsubscibe error
           // Test is already success. Terminate anyway
           helper_terminate_normal("unsubscribeErrorResponse received");
