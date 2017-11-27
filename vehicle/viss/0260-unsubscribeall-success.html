@@ -34,7 +34,7 @@ In this case, specifying subscriptionId value is not needed.<br>
 <br>
 <b>Expected Result:</b><br>
 - By sending 'UnsubscribeAll' request, receives 'UnsubscribeSuccessResponse'.<br>
-- After receiving 'UnsubscribeSuccessResponse', no 'SubscirbeNotivication' will not reach.<br>
+- After receiving 'UnsubscribeSuccessResponse', no 'SubscirbeNotification' will not reach.<br>
 </div>
 
 <div id="result"></div>
@@ -92,19 +92,25 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_SUBSCRIBE) {
       t.step_func(function() {
         // wait for subscribe response
-        if (isSubscribeSuccessResponse(reqId1, msg)) {
-          addLogMessage("reqId1: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
-          subSuccess1 = true;
-        }
-        if (isSubscribeSuccessResponse(reqId2, msg)) {
-          addLogMessage("reqId2: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
-          subSuccess2 = true;
-        }
-        if (isSubscribeSuccessResponse(reqId3, msg)) {
-          addLogMessage("reqId3: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
-          subSuccess3 = true;
-        }
 
+        if (reqId1 === msg.requestId) {
+          if (isSubscribeSuccessResponse(reqId1, msg)) {
+            addLogMessage("reqId1: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
+            subSuccess1 = true;
+          }
+        }
+        if (reqId2 === msg.requestId) {
+          if (isSubscribeSuccessResponse(reqId2, msg)) {
+            addLogMessage("reqId2: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
+            subSuccess2 = true;
+          }
+        }
+        if (reqId3 === msg.requestId) {
+          if (isSubscribeSuccessResponse(reqId3, msg)) {
+            addLogMessage("reqId3: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
+            subSuccess3 = true;
+          }
+        }
         // If all the Subscribe requests turned out successful, go to next phase
         if (subSuccess1 && subSuccess2 && subSuccess3) {
           phase = PH_SENT_UNSUBSCRIBE;
@@ -131,20 +137,11 @@ vehicle.onopen = function() {
       })();
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
-
-        // Ignore SubscriptionNotificationResponse/ErrorResponse
-        //  comming before UbsubscribeAll response reached.
-        var res1 = isSubscriptionNotificationResponse(subId, msg);
-        if (res1) {
-          addLogMessage("Ignore SubscriptionNotificationResponse.");
+        if (msg.action !== "unsubscribeAll") {
+          addLogMessage("Ignore messages except for UnsubscribeAll response.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }
-        var res2 = isSubscriptionNotificationErrorResponse(subId, msg);
-        if (res2) {
-          addLogMessage("Ignore SubscriptionNotificationErrorResponse.");
-          return;
-        }
-
         if (isUnsubscribeAllSuccessResponse(reqId_unsubAll, msg)) {
           addLogMessage( "UnsubscribeSuccess response received." );
           // unsubscibe success
@@ -165,8 +162,8 @@ vehicle.onopen = function() {
             }, TIME_CONFIRM_UNSUBSCRIBED);
           }, TIME_WAIT_SUB_NOTIF_END);
 
-        } else if (isUnsubscribeErrorResponse(reqId_unsubAll, "", msg)) {
-          addLogMessage( "UnsubscribeError response received." );
+        } else if (isUnsubscribeAllErrorResponse(reqId_unsubAll, "", msg)) {
+          addLogMessage( "UnsubscribeAllError response received." );
           // unsubscibe error
           // Test is already success. Terminate anyway
           phase = PH_END;
