@@ -79,6 +79,10 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_SUBSCRIBE) {
       t.step_func(function() {
         // wait for subscribe response
+        if (msg.action !== "subscribe") {
+          addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe response.");
+          return;
+        }
         var res = isSubscribeSuccessResponse("", msg);
         assert_true(res, "True if subscribeSuccessResponse received.");
 
@@ -122,10 +126,10 @@ vehicle.onopen = function() {
           });
           if (success) {
             addLogMessage("Test Success: There is no duplicated subId of subId[0] = " + subId[0] + "<br>");
-            helper_terminate_success("There is no duplicsfated of subId[0] = " + subId[0]);
+            helper_terminate_success("There is no duplicated of subId[0] = " + subId[0]);
           } else {
-            addLogMessage("Test Failure: There is no duplicated subId. Test Failed.<br>");
-            helper_terminate_failure("There is no duplicated subId. Test Failed.");
+            addLogMessage("Test Failure: There is duplicated subId. Test Failed.<br>");
+            helper_terminate_failure("There is duplicated subId = " + subId[0] + ". Test Failed.");
           }
           phase = PH_END;
         }
