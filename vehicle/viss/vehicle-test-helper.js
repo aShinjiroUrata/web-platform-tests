@@ -265,7 +265,7 @@ function isUnsubscribeAllSuccessResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.action === "unsubscribeAll" &&
       _inJson.requestId &&
-      _inJson.subscriptionId === null &&
+      _inJson.subscriptionId === undefined &&
       _inJson.timestamp &&     //'timestamp' exists
       _inJson.error === undefined)
   {
@@ -282,7 +282,7 @@ function isUnsubscribeAllErrorResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
   if (_inJson.action === "unsubscribeAll" &&
       _inJson.requestId &&
-      _inJson.subscriptionId === null &&
+      _inJson.subscriptionId === undefined &&
       _inJson.timestamp &&      //'timestamp' exists
       _inJson.error)          //'error' exists
   {
