@@ -78,8 +78,12 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_SUBSCRIBE) {
       t.step_func(function() {
         // wait for subscribe response
-        var res = isSubscribeSuccessResponse(reqId, msg);
-        if (res) {
+        if (msg.action !== "subscribe") {
+          addLogMessage("Ignore messge except for Subscribe response.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
+          return;
+        }
+        if (isSubscribeSuccessResponse(reqId, msg)) {
           addLogMessage("subscribeSuccessResponse received. subId = " + msg.subscriptionId);
           subId = msg.subscriptionId
 
@@ -100,12 +104,9 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
         // wait for unsubscribe response
-        if (isSubscriptionNotificationResponse(subId, msg)) {
-          addLogMessage("Ignore SubscriptionNotificationResponse.");
-          return;
-        }
-        if (isSubscriptionNotificationErrorResponse(subId, msg)) {
-          addLogMessage("Ignore SubscriptionNotificationErrorResponse.");
+        if (msg.action !== "unsubscribe") {
+          addLogMessage("Ignore messge except for Unsubscribe response.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }
         if (isUnsubscribeErrorResponse(reqId1, invalidSubId, msg)) {
