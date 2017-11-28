@@ -134,7 +134,7 @@ vehicle.onopen = function() {
         var flgSuccess = true;
         // check the notification result
         for (var i=0; i<notifCount; i++) {
-          var res = verifyRange(notif[i]);
+          var res = verifyRange(notif[i], range_above, range_below );
           if (res == false)
             flgSuccess = false;
         }
@@ -169,17 +169,18 @@ vehicle.onopen = function() {
 }
 
 // verify Range
-function verifyRange( _notif) {
+// - supposing '_above' and '_below' are number or null or undefined
+function verifyRange(_notif, _above, _below) {
   var val = _notif.json.value;
-  if ( val > range_above) {
-    addLogFailure("Range_above:"+ range_above +" < value:"+ val);
+  if (_below && val > _below) {
+    addLogFailure("value: "+ val + " > Range_below:"+ range_below);
     return false;
-  } else 
-  if ( val < range_below) {
-    addLogFailure("Range_below:"+ range_below +" > value:"+ val);
+  } else
+  if ( _above && val < _above) {
+    addLogFailure("Range_above:"+ range_above +" > value:"+ val);
     return false;
   } else {
-    addLogSuccess("Range_above:"+ range_above +" > value:"+ val +" > Range_below:"+range_below);
+    addLogSuccess("Range_below:"+ _below +" >= value:"+ val +" >= Range_above:"+ _above);
     return true;
   }
 }
