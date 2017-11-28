@@ -92,7 +92,11 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_SUBSCRIBE) {
       t.step_func(function() {
         // wait for subscribe response
-
+        if (msg.action !== "subscribe") {
+          addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe responses.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
+          return;
+        }
         if (reqId1 === msg.requestId) {
           if (isSubscribeSuccessResponse(reqId1, msg)) {
             addLogMessage("reqId1: subscribeSuccessResponse received. subId = " + msg.subscriptionId);
@@ -138,7 +142,7 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
         if (msg.action !== "unsubscribeAll") {
-          addLogMessage("Ignore messages except for UnsubscribeAll response.");
+          addLogMessage("PH_SENT_UNSUBSCRIBE: Ignore messages except for UnsubscribeAll response.");
           addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }

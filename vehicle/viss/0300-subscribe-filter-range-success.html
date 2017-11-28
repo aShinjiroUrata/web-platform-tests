@@ -80,6 +80,11 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_SUBSCRIBE) {
       t.step_func(function() {
         // wait for subscribe response
+        if (msg.action !== "subscribe") {
+          addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe responses.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
+          return;
+        }
         var res = isSubscribeSuccessResponse(reqId, msg);
         if (res) {
           addLogMessage("subscribeSuccessResponse received. subscribeId = " + msg.subscriptionId);
@@ -93,6 +98,11 @@ vehicle.onopen = function() {
     } else if (phase == PH_SUBSCRIBED) {
       t.step_func(function() {
         // wait subscriptionNotification
+        if (msg.action !== "subscription") {
+          addLogMessage("PH_SUBSCRIBED: Ignore messages except for Subscription notification.");
+          addLogMessage("msg = " + JSON.stringify(msg));
+          return;
+        }
         var res = isSubscriptionNotificationResponse(subId, msg);
         if (res){
           if (notifCount > NOTIFICATION_COUNT) {
@@ -119,6 +129,11 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
         // wait for unsubscribe response
+        if (msg.action !== "unsubscribe") {
+          addLogMessage("PH_SENT_UNSUBSCRIBE: Ignore messages except for Unsubscribe response.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
+          return;
+        }
         var res = isUnsubscribeSuccessResponse(reqId, subId, msg);
         assert_true(res, "True if unsubscribeSuccessResponse received.");
         if (res) {
