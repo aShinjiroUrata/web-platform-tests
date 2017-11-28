@@ -73,6 +73,7 @@ vehicle.onopen = function() {
         // wait for subscribe response
         if (msg.action !== "subscribe") {
           addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe responses.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }
         var res = isSubscribeSuccessResponse(reqId, msg);
@@ -118,6 +119,7 @@ vehicle.onopen = function() {
         // wait for unsubscribe response
         if (msg.action !== "unsubscribe") {
           addLogMessage("PH_SENT_UNSUBSCRIBE: Ignore messages except for Unsubscribe response.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }
         if (isUnsubscribeSuccessResponse(reqId, subId, msg)) {

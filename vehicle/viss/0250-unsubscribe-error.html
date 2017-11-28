@@ -79,7 +79,7 @@ vehicle.onopen = function() {
       t.step_func(function() {
         // wait for subscribe response
         if (msg.action !== "subscribe") {
-          addLogMessage("Ignore messge except for Subscribe response.");
+          addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe responses.");
           addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }
@@ -105,7 +105,7 @@ vehicle.onopen = function() {
       t.step_func(function() {
         // wait for unsubscribe response
         if (msg.action !== "unsubscribe") {
-          addLogMessage("Ignore messge except for Unsubscribe response.");
+          addLogMessage("PH_SENT_UNSUBSCRIBE: Ignore messages except for Unsubscribe response.");
           addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }

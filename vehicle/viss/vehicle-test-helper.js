@@ -185,7 +185,8 @@ function isSubscribeErrorResponse( _reqId, _inJson) {
 
 function isSubscriptionNotificationResponse( _subId, _inJson) {
   // TODO: better to check with Json schema
-  if (_inJson.subscriptionId &&     //'subscriptionId' just exists
+  if (_inJson.action === "subscription" &&
+      _inJson.subscriptionId &&     //'subscriptionId' just exists
       _inJson.timestamp &&          //'timestamp' exists
       _inJson.value &&              //'value' exists
       _inJson.error === undefined)  //'error' not exists
@@ -201,7 +202,8 @@ function isSubscriptionNotificationResponse( _subId, _inJson) {
 }
 function isSubscriptionNotificationErrorResponse( _subId, _inJson) {
   // TODO: better to check with Json schema
-  if (_inJson.subscriptionId &&       //'subscriptionId' just exists
+  if (_inJson.action === "subscription" &&
+      _inJson.subscriptionId &&       //'subscriptionId' just exists
       _inJson.timestamp &&            //'timestamp' exists
       _inJson.value === undefined &&  //'value' not exist
       _inJson.error)                  //'error' exists

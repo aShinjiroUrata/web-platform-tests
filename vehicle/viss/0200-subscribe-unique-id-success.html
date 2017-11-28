@@ -85,7 +85,6 @@ vehicle.onopen = function() {
         }
         var res = isSubscribeSuccessResponse("", msg);
         assert_true(res, "True if subscribeSuccessResponse received.");
-
         if (res) {
           for (var i=0; i<subscribe_num; i++) {
             if (msg.requestId === reqId[i]) {
@@ -94,7 +93,6 @@ vehicle.onopen = function() {
                             + subId[i]);
             }
           }
-
         } else {
           helper_terminate_failure("subscribeErrorResponse received. test failed.");
           unsubscribeAllRequest(subId);

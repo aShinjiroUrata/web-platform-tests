@@ -65,6 +65,10 @@ vehicle.onopen = function() {
       } else if (phase == PH_SENT_SUBSCRIBE) {
         t.step_func(function() {
           // wait for subscribe response
+          if (msg.action !== "subscribe") {
+            addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe responses.");
+            return;
+          }
           var res = isSubscribeErrorResponse(reqId, msg);
           if (res) {
             assert_true(res, "subscribeErrorResponse received.");
@@ -89,8 +93,11 @@ vehicle.onopen = function() {
       } else if (phase == PH_SENT_UNSUBSCRIBE) {
         t.step_func(function() {
           // wait for unsubscribe response
+          if (msg.action !== "unsubscribe") {
+            addLogMessage("PH_SENT_UNSUBSCRIBE: Ignore messages except for Unsubscribe response.");
+            return;
+          }
           var res = isUnsubscribeSuccessResponse(reqId, subId, msg);
-
           if (res) {
             // unsubscibe success
             phase = PH_UNSUBSCRIBED;

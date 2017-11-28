@@ -54,7 +54,6 @@ var phase = PH_START;
 
 var t = async_test("Subscribe test: success 01");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
-
 vehicle.onopen = function() {
   // process messages from the server
   vehicle.onmessage = function(event) {
@@ -67,6 +66,10 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_SUBSCRIBE) {
       t.step_func(function() {
         // wait for subscribe response
+        if (msg.action !== 'subscribe') {
+          addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscirbe response.");
+          return;
+        }
         var res = isSubscribeSuccessResponse(reqId, msg);
         assert_true(res, "True if subscribeSuccessResponse received.");
         if (res) {
@@ -91,18 +94,8 @@ vehicle.onopen = function() {
     } else if (phase == PH_SENT_UNSUBSCRIBE) {
       t.step_func(function() {
         // wait for unsubscribe response
-        var res1 = isSubscriptionNotificationResponse(subId, msg);
-        if (res1) {
-          addLogMessage("Ignore SubscriptionNotificationResponse.");
-          return;
-        }
-        var res2 = isSubscriptionNotificationErrorResponse(subId, msg);
-        if (res2) {
-          addLogMessage("Ignore SubscriptionNotificationErrorResponse.");
-          return;
-        }
         if (msg.action !== 'unsubscribe') {
-          addLogMessage("Ignore messages except for UnsubscirbeSuccessResponse/ErrorResonse.");
+          addLogMessage("PH_SENT_UNSUBSCRIBE: Ignore messages except for UnsubscirbeSuccessResponse/ErrorResonse.");
           return;
         }
         if (isUnsubscribeSuccessResponse(reqId, subId, msg)) {

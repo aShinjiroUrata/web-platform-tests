@@ -85,6 +85,11 @@ vehicle.onopen = function() {
         // nothing to do
       } else if (phase == PH_SENT_SUBSCRIBE) {
         // wait for subscribe response
+        if (msg.action !== "subscribe") {
+          addLogMessage("PH_SENT_SUBSCRIBE: Ignore messages except for Subscribe responses.");
+          addLogMessage("  msg = " + JSON.stringify(msg));
+          return;
+        }
         if (isSubscribeSuccessResponse(reqId, msg)) {
           helper_terminate_failure("subscribeSuccessResponse received. Wrong behavior.");
           subId = msg.subscriptionId
