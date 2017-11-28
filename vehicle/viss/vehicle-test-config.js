@@ -122,8 +122,8 @@ var SUBSCRIBE_BRANCH_PATH = "Signal.Drivetrain.Transmission";
 // - Settings for filter test
 var SUBSCRIBE_FILTER_TEST_PATH  = "Signal.Drivetrain.Transmission.Speed";
 var INTERVAL_TIME   = 1000; //msec
-var RANGE_ABOVE     = 100;  //km/h (range for vehicle speed)
-var RANGE_BELOW     = 20;   //km/h (range for vehicle speed)
+var RANGE_BELOW     = 100;   //km/h (range for vehicle speed)
+var RANGE_ABOVE     = 20;  //km/h (range for vehicle speed)
 var MINCHANGE_VAL   = 5;    //km/h (minimum change for vehicle speed)
 
 // - Margin for calculating interval time.
