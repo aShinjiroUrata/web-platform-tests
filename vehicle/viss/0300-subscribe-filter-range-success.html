@@ -44,15 +44,14 @@ var PH_SENT_UNSUBSCRIBE = 3;
 var PH_UNSUBSCRIBED     = 4;
 var PH_END              = 5;
 
-var NOTIFICATION_COUNT  = 5;
-
-var reqId = "reqid-0290";
+var reqId = "reqid-0300";
 var path = SUBSCRIBE_STANDARD_PATH;
 var phase = PH_START;
 var subId = null;
 
 var notifCount = 0;
 var notif = [];
+var notif_timer_started = false;
 
 var intervalTime   = INTERVAL_TIME
 var intervalMargin = INTERVAL_MARGIN;
@@ -85,8 +84,7 @@ vehicle.onopen = function() {
           addLogMessage("  msg = " + JSON.stringify(msg));
           return;
         }
-        var res = isSubscribeSuccessResponse(reqId, msg);
-        if (res) {
+        if (isSubscribeSuccessResponse(reqId, msg)) {
           addLogMessage("subscribeSuccessResponse received. subscribeId = " + msg.subscriptionId);
           subId = msg.subscriptionId
           phase = PH_SUBSCRIBED;
@@ -98,15 +96,11 @@ vehicle.onopen = function() {
     } else if (phase == PH_SUBSCRIBED) {
       t.step_func(function() {
         // wait subscriptionNotification
-        if (msg.action !== "subscription") {
-          addLogMessage("PH_SUBSCRIBED: Ignore messages except for Subscription notification.");
-          addLogMessage("msg = " + JSON.stringify(msg));
-          return;
-        }
-        var res = isSubscriptionNotificationResponse(subId, msg);
-        if (res){
-          if (notifCount > NOTIFICATION_COUNT) {
-            // do unsubscribe
+        if (notif_timer_started === false) {
+          notif_timer_started = true;
+          // wait for subscriotionNotification for fixed time
+          t.step_timeout(function() {
+            // When wait time over, do unsubscribe
             addLogMessage("Send unsubscribe request");
             var unsub_req ='{"action":"unsubscribe"'
                           +' ,"subscriptionId":"'+subId+'"'
@@ -115,7 +109,16 @@ vehicle.onopen = function() {
             addLogMessage("unsubscribe req: json="+unsub_req);
             vehicle.send(unsub_req);
             phase = PH_SENT_UNSUBSCRIBE;
-          }
+          }, TIME_NOTIF_WAIT
+          );
+        }
+
+        if (msg.action !== "subscription") {
+          addLogMessage("PH_SUBSCRIBED: Ignore messages except for Subscription notification.");
+          addLogMessage("msg = " + JSON.stringify(msg));
+          return;
+        }
+        if (isSubscriptionNotificationResponse(subId, msg)) {
           notif[notifCount] = {};
           notif[notifCount].json = msg;
           notif[notifCount].timestamp = ts;
@@ -145,7 +148,6 @@ vehicle.onopen = function() {
           addLogMessage("unsubscribeErrorResponse received");
         }
         phase = PH_UNSUBSCRIBED;
-
         var flgSuccess = true;
         // check the notification result
         for (var i=0; i<notifCount; i++) {
