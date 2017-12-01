@@ -45,9 +45,14 @@ var VISS_URL = VISS_PROTOCOL + VISS_HOST + ":" + VISS_PORT;
 //   When a test is finished, wait for thit time before closing test window.
 //   if you don't need to check each test result by eye, you can set as zero.
 var TIME_FINISH_WAIT = 500; // msec
+
+// - Time-out time for filter test
+//   To evaluate filtered subscription behavior, collect subscriptionNotification for this time period.
+var TIME_NOTIF_WAIT = 5000; // msec
+
 // - Time-out time to forcefully terminate the tests.
 //   If your VISS server tend to take time to respond, you can set this longer.
-var TIME_OUT_TIME = 5000; // msec
+var TIME_OUT_TIME = TIME_NOTIF_WAIT + 2000; // msec
 
 // ==============================
 // === Token setting
