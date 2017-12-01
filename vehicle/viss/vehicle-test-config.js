@@ -78,13 +78,13 @@ var AUTH_ACCESS_ACTION = "set";
 var AUTH_ACCESS_VALUE  = true;  // necessary when AUTH_ACCESS_ACTION == set
 
 // ==============================
-// === getVSS setting
+// === getMetadata setting
 // ==============================
-// == path for getVSS method test ==
+// == path for getMetadata method test ==
 // [TODO] Please set data path strings those are valid(and invalid) with your VISS server environment.
-var GETVSS_STANDARD_PATH= "Signal.Drivetrain.InternalCombustionEngine.RPM";
-var GETVSS_WILDCARD_PATH= "Signal.Drivetrain.InternalCombustionEngine.*";
-var GETVSS_INVALID_PATH = "Signal.Drivetrain.InternalCombustionEngine.WrongName";
+var GETMETADATA_STANDARD_PATH= "Signal.Drivetrain.InternalCombustionEngine.RPM";
+var GETMETADATA_WILDCARD_PATH= "Signal.Drivetrain.InternalCombustionEngine.*";
+var GETMETADATA_INVALID_PATH = "Signal.Drivetrain.InternalCombustionEngine.WrongName";
 
 // ==============================
 // === get setting

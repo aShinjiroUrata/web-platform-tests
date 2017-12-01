@@ -12,30 +12,30 @@
 <script src="./vehicle-test-helper.js"></script>
 
 <div id="test-title">
-[0100: get a VSS tree with a valid request]
+[0100: get a Vehicle Data Model tree with a valid getMetadata request]
 </div>
 <br>
 <div id="test-assertion">
 <b>Test assertion:</b><br>
-When the client makes a 'getVSS' request to the server<br>
+When the client makes a 'getMetadata' request to the server<br>
  with a data path which does not include wildcards, <br>
- 'vssSuccessResponse' is returned.<br>
-# Spec changed: 'getVSS' does not support wildcards.
+ 'metadataSuccessResponse' is returned.<br>
+# Spec changed: 'getMetadata' does not support wildcards.
 </div>
 <div id="scenario">
 <br>
 <b>Test Scenario:</b><br>
-1. Execute 'getVSS' method specifing a 'path'<br>
+1. Execute 'getMetadata' method specifing a 'path'<br>
    (e.g. Path = 'Signal.Drivetrain.InternalCombustionEngine.RPM')<br>
-2. Confirm 'vssSuccessResponse' will be returned.<br>
+2. Confirm 'metadataSuccessResponse' will be returned.<br>
 3. Confirm the obtained VSS matches with specified 'path'<br>
    (To confirm, create 'answer' VSS by below steps.<br>
     - Get 'full VSS' tree.<br>
     - Extract the 'answer' VSS from 'full VSS' with 'path' string.<br>
-    - Compare getVSS result and 'answer' VSS. If matches, test success.)<br>
+    - Compare getMetadata result and 'answer' VSS. If matches, test success.)<br>
 <br>
 <b>Expected Result:</b><br>
-- 'VssSuccessResponse' is returned and it contains VSS tree matches with specified data path. <br>
+- 'MetadataSuccessResponse' is returned and it contains VSS tree matches with specified data path. <br>
 </div>
 
 <div id="result"></div>
@@ -44,17 +44,17 @@ When the client makes a 'getVSS' request to the server<br>
 
 <script>
 // const
-var reqId_0 = "reqid-0100"; // getVSS for entire tree
-var reqId_1 = "reqid-0101"; // getVSS with path spedified
+var reqId_0 = "reqid-0100"; // getMetadata for entire tree
+var reqId_1 = "reqid-0101"; // getMetadata with path spedified
 var objVssAll = null;
 var strVssAll = null;
 var objVssPart = null;
 var strVssPart = null;
 var strVssCorrect = null;
 
-var path = GETVSS_STANDARD_PATH;
+var path = GETMETADATA_STANDARD_PATH;
 
-var t = async_test("getVSS success case");
+var t = async_test("getMetadata success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
@@ -65,17 +65,17 @@ vehicle.onopen = function() {
     t.step_func(function() {
 
       // Received full VSS tree
-      if (isVssSuccessResponse(reqId_0, msg)) {
+      if (isMetadataSuccessResponse(reqId_0, msg)) {
         objVssAll = msg.vss;
         strVssAll = JSON.stringify(msg.vss);
         //addLogMessage("<br>get vss all = " + strVssAll.substr(1,200));
       }
 
       // Received partial VSS tree
-      if (isVssSuccessResponse(reqId_1, msg)) {
+      if (isMetadataSuccessResponse(reqId_1, msg)) {
         var objVssPart = msg.vss;
         var strVssPart = JSON.stringify(msg.vss);
-        addLogMessage("<br>getVSS result vss = " + strVssPart);
+        addLogMessage("<br>getMetadata result vss = " + strVssPart);
       }
 
       // Enter to 'Verify' stage
@@ -86,7 +86,7 @@ vehicle.onopen = function() {
         objVssCorrect = extractPartialVss(objVssAll, path);
         addLogMessage("<br>'answer' vss = " + JSON.stringify(objVssCorrect));
 
-        // If two VSS matches, regard that VSS tree obtained with getVSS() is correct.
+        // If two VSS matches, regard that VSS tree obtained with getMetadata() is correct.
         var res = compareVss(objVssPart, objVssCorrect);
         if (res) {
           helper_terminate_success("received VSS tree matched with requested path. Right behavior.");
@@ -103,15 +103,15 @@ vehicle.onopen = function() {
   }, TIME_OUT_TIME);
 
   // path = ''. Request 'Full VSS'
-  addLogMessage("Send getVSS request. path = ''");
-  var get_req = '{"action":"getVSS","path":"","requestId":"'+reqId_0+'"}';
-  addLogMessage("getVSS req: json="+get_req);
+  addLogMessage("Send getMetadata request. path = ''");
+  var get_req = '{"action":"getMetadata","path":"","requestId":"'+reqId_0+'"}';
+  addLogMessage("getMetadata req: json="+get_req);
   vehicle.send(get_req);
 
   // Request parital VSS by specifying 'path'
-  addLogMessage("Send getVSS request. path = " + path);
-  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId_1+'"}';
-  addLogMessage("getVSS req: json="+get_req);
+  addLogMessage("Send getMetadata request. path = " + path);
+  var get_req = '{"action":"getMetadata","path":"'+ path +'" ,"requestId":"'+reqId_1+'"}';
+  addLogMessage("getMetadata req: json="+get_req);
   vehicle.send(get_req);
 }
 
@@ -123,7 +123,7 @@ function extractPartialVss(_objVssAll, _strPath) {
   // a. standard path (e.g.  'Signal.Drivetrain.InternalCombustionEngine.RPM')
   // b. harfway path  (e.g.  'Signal.Drivetrain.InternalCombustionEngine')
   // c. irregular path (e.g. 'Signal.Drivetrain.badname')
-  // #getVSS doesn't support wildcard path
+  // #getMetadata doesn't support wildcard path
 
   //Procedure
   // - Separate _strPath with delimiter '.'
@@ -207,10 +207,10 @@ function compareVss(_objVssA, _objVssB) {
   var strB = JSON.stringify(_objVssB);
 
   if (strA === strB) {
-    addLogMessage("<br>SUCCESS: The getVSS result matched with 'answer' vss.");
+    addLogMessage("<br>SUCCESS: The getMetadata result matched with 'answer' vss.");
     return true;
   } else {
-    addLogMessage("<br>FAILURE: The getVSS result not matched with 'answer' vss.");
+    addLogMessage("<br>FAILURE: The getMetadata result not matched with 'answer' vss.");
     return false;
   }
 }

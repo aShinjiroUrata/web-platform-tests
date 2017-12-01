@@ -38,10 +38,10 @@ function isAuthorizeErrorResponse( _reqId, _inJson) {
   }
 }
 
-function isVssSuccessResponse( _reqId, _inJson) {
+function isMetadataSuccessResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
   if (
-      _inJson.action === "getVSS" &&
+      _inJson.action === "getMetadata" &&
       _inJson.requestId &&
       _inJson.vss &&                //'TTL' exists
       _inJson.error === undefined)  //'error' not exists
@@ -55,10 +55,10 @@ function isVssSuccessResponse( _reqId, _inJson) {
     return false;
   }
 }
-function isVssErrorResponse( _reqId, _inJson) {
+function isMetadataErrorResponse( _reqId, _inJson) {
   // TODO: better to check with Json schema
   if (
-      _inJson.action === "authorize" &&
+      _inJson.action === "getMetadata" &&
       _inJson.requestId &&
       _inJson.vss === undefined &&  //'vss' not exists
       _inJson.error)                //'error' exists
