@@ -12,23 +12,23 @@
 <script src="./vehicle-test-helper.js"></script>
 
 <div id="test-title">
-[0110: get a VSS tree with a valid request with a wildcard]
+[0110: get a VSS tree with a valid getMetadata request with a wildcard]
 </div>
 <br>
 <div id="test-assertion">
 <b>Test assertion:</b><br>
-When the client makes a 'getVSS' request to the server<br>
- with a data path contains a wildcard, 'vssSuccessResponse' is returned<br>
+When the client makes a 'getMetadata' request to the server<br>
+ with a data path contains a wildcard, 'metadataSuccessResponse' is returned<br>
  which contains VSS tree matches to the wildcard data path.<br>
 </div>
 <div id="scenario">
 <br>
 <b>Test Scenario:</b><br>
-1. Execute getVSS method without specifing a path<br>
-2. Confirm 'vssSuccessResponse' will be returned and it contains entire VSS tree.<br>
+1. Execute getMetadata method without specifing a path<br>
+2. Confirm 'metadataSuccessResponse' will be returned and it contains entire VSS tree.<br>
 <br>
 <b>Expected Result:</b><br>
-- 'VssSuccessResponse' is retruned and it contains VSS tree matches to wildcard data path. <br>
+- 'MetadataSuccessResponse' is retruned and it contains VSS tree matches to wildcard data path. <br>
 </div>
 
 <div id="result"></div>
@@ -37,9 +37,9 @@ When the client makes a 'getVSS' request to the server<br>
 
 <script>
 var reqId = "reqid-0110";
-var path = GETVSS_WILDCARD_PATH;
+var path = GETMETADATA_WILDCARD_PATH;
 
-var t = async_test("getVSS with wildcard path. success case");
+var t = async_test("getMetadata with wildcard path. success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
@@ -48,14 +48,14 @@ vehicle.onopen = function() {
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
-      if (isVssSuccessResponse(reqId, msg)) {
+      if (isMetadataSuccessResponse(reqId, msg)) {
         //TODO: Need to check returned vss really match with the wildcard path?
 
         var vssStr = JSON.stringify(msg.vss).substr(1,3000);
-        helper_terminate_success("getVSS response received.");
+        helper_terminate_success("getMetadata response received.");
         addLogMessage("<br>vss = " + vssStr);
-      } else if (isVssErrorResponse(reqId, msg)) {
-        helper_terminate_failure("getVSS method failed");
+      } else if (isMetadataErrorResponse(reqId, msg)) {
+        helper_terminate_failure("getMetadata method failed");
       }
     })();
   }
@@ -65,9 +65,9 @@ vehicle.onopen = function() {
     helper_terminate_failure("Fishish by timeout");
   }, TIME_OUT_TIME);
 
-  addLogMessage("Send getVSS request. path = " + path);
-  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
-  addLogMessage("getVSS req: json="+get_req);
+  addLogMessage("Send getMetadata request. path = " + path);
+  var get_req = '{"action":"getMetadata","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("getMetadata req: json="+get_req);
   vehicle.send(get_req);
 }
 </script>

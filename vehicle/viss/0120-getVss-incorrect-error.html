@@ -12,22 +12,22 @@
 <script src="./vehicle-test-helper.js"></script>
 
 <div id="test-title">
-[0120: get a VSS tree with an invalid request]
+[0120: get a VSS tree with an invalid getMetadata request]
 </div>
 <br>
 <div id="test-assertion">
 <b>Test assertion:</b><br>
-When the client makes a request with an incorrect 'getVSS' action to the server,<br>
- a JSON data object defined as 'vssErrorResponse' is returned.<br>
+When the client makes a request with an incorrect 'getMetadata' action to the server,<br>
+ a JSON data object defined as 'metadataErrorResponse' is returned.<br>
 </div>
 <div id="scenario">
 <br>
 <b>Test Scenario:</b><br>
-1. Execute getVSS method with invalid data path<br>
-2. Confirm 'vssErrorResponse' will be returned<br>
+1. Execute getMetadata method with invalid data path<br>
+2. Confirm 'metadataErrorResponse' will be returned<br>
 <br>
 <b>Expected Result:</b><br>
-- 'VssErrorResponse' is retruned <br>
+- 'MetadataErrorResponse' is retruned <br>
 </div>
 
 <div id="result"></div>
@@ -36,9 +36,9 @@ When the client makes a request with an incorrect 'getVSS' action to the server,
 
 <script>
 var reqId = "reqid-0100";
-var path = GETVSS_INVALID_PATH;
+var path = GETMETADATA_INVALID_PATH;
 
-var t = async_test("getVSS success case");
+var t = async_test("getMetadata success case");
 var vehicle  = new WebSocket(VISS_URL, VISS_SUBPROTO);
 
 vehicle.onopen = function() {
@@ -47,12 +47,12 @@ vehicle.onopen = function() {
     var msg = JSON.parse(event.data);
     t.step_func(function() {
 
-      if (isVssSuccessResponse(reqId, msg)) {
+      if (isMetadataSuccessResponse(reqId, msg)) {
         var vssStr = JSON.stringify(msg.vss).substr(1,3000);
-        helper_terminate_failure("vssSuccessResponse received. Wrong behavior");
+        helper_terminate_failure("metadataSuccessResponse received. Wrong behavior");
         addLogMessage("<br>vss = " + vssStr);
       } else {
-        helper_terminate_success("vssErrorResponse received. Right behavior");
+        helper_terminate_success("metadataErrorResponse received. Right behavior");
         //TODO: show error detail
       }
     })();
@@ -63,9 +63,9 @@ vehicle.onopen = function() {
     helper_terminate_failure("Fishish by timeout");
   }, TIME_OUT_TIME);
 
-  addLogMessage("Send getVSS request. path = " + path);
-  var get_req = '{"action":"getVSS","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
-  addLogMessage("getVSS req: json"+get_req)
+  addLogMessage("Send getMetadata request. path = " + path);
+  var get_req = '{"action":"getMetadata","path":"'+ path +'" ,"requestId":"'+reqId+'"}';
+  addLogMessage("getMetadata req: json"+get_req)
   vehicle.send(get_req);
 }
 </script>
