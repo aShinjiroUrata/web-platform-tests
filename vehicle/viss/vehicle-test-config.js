@@ -27,7 +27,7 @@
 // - select ws:// or wss:// according to your VISS server
 var VISS_PROTOCOL = "ws://";  // or  "wss://";
 var VISS_HOST = "127.0.0.1";
-var VISS_PORT = "3000";
+var VISS_PORT = "3001";
 //[FIXED]
 var VISS_SUBPROTO = "wvss1.0";
 
