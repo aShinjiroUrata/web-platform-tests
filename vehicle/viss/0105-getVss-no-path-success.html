@@ -48,7 +48,7 @@ vehicle.onopen = function() {
       if (isMetadataSuccessResponse(reqId, msg)) {
         //TODO: Response really matches with request?
         //TODO: How to judge if this is engire tree?
-        var vssStr = JSON.stringify(msg.vss).substr(1,3000);
+        var vssStr = JSON.stringify(msg.metadata).substr(1,3000);
         helper_terminate_success("getMetadata response received.");
         addLogMessage("<br>vss = " + vssStr);
       } else {
