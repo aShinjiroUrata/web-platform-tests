@@ -43,7 +43,7 @@ function isMetadataSuccessResponse( _reqId, _inJson) {
   if (
       _inJson.action === "getMetadata" &&
       _inJson.requestId &&
-      _inJson.vss &&                //'TTL' exists
+      _inJson.metadata &&                //'TTL' exists
       _inJson.error === undefined)  //'error' not exists
   {
     if (_reqId === "" || _reqId === _inJson.requestId) {
@@ -60,7 +60,7 @@ function isMetadataErrorResponse( _reqId, _inJson) {
   if (
       _inJson.action === "getMetadata" &&
       _inJson.requestId &&
-      _inJson.vss === undefined &&  //'vss' not exists
+      _inJson.metadata === undefined &&  //'vss' not exists
       _inJson.error)                //'error' exists
   {
     if (_reqId === "" || _reqId === _inJson.requestId) {
