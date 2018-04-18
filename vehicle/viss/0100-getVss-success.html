@@ -66,15 +66,15 @@ vehicle.onopen = function() {
 
       // Received full VSS tree
       if (isMetadataSuccessResponse(reqId_0, msg)) {
-        objVssAll = msg.vss;
-        strVssAll = JSON.stringify(msg.vss);
+        objVssAll = msg.metadata;
+        strVssAll = JSON.stringify(msg.metadata);
         //addLogMessage("<br>get vss all = " + strVssAll.substr(1,200));
       }
 
       // Received partial VSS tree
       if (isMetadataSuccessResponse(reqId_1, msg)) {
-        var objVssPart = msg.vss;
-        var strVssPart = JSON.stringify(msg.vss);
+        var objVssPart = msg.metadata;
+        var strVssPart = JSON.stringify(msg.metadata);
         addLogMessage("<br>getMetadata result vss = " + strVssPart);
       }
 
