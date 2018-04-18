@@ -48,7 +48,7 @@ vehicle.onopen = function() {
     t.step_func(function() {
 
       if (isMetadataSuccessResponse(reqId, msg)) {
-        var vssStr = JSON.stringify(msg.vss).substr(1,3000);
+        var vssStr = JSON.stringify(msg.metadata).substr(1,3000);
         helper_terminate_failure("metadataSuccessResponse received. Wrong behavior");
         addLogMessage("<br>vss = " + vssStr);
       } else {
