@@ -1,17 +1,16 @@
 # W3C Vehicle API test case README
-last update: May 26, 2017
+last update: Dec 16, 2019
 
 #### Install W3C web platform test from a specific fork
 
 Install procedure is standard one as written in web-platform-tests/README.md.<br>
 However, Vehicle API test cases are required to download from this folk<br>
-since not yet marged to main branch as of now(2017/05/26).
+since not yet marged to main branch as of now(2019/12/16).
 
 1. Clone W3C web platform test from below forked repository and branch.
 ```
 $ git clone -b dev-urata-vsss-test https://github.com/aShinjiroUrata/web-platform-tests
 $ cd web-platfrom-tests
-$ git submodule update --init --recursive
 ```
 
 2. Set up web platform test by following standard procedure in README.md instruction.<br>
@@ -20,9 +19,9 @@ $ git submodule update --init --recursive
 web-platform-tests/README.md
 ```
 
-3. Start W3C web platform test
+3. Run W3C web platform test
 ```
-$ ./serve
+$ ./wpt serve
 ```
 
 4. Verify web platfrom test is working
@@ -34,7 +33,7 @@ http://web-platform.test:8000/tools/runner/index.html
 
 #### Run the test cases with  ACCESS's VISS prototype as a trial target
 
-To verify W3C Automotive test cases are successfully installed,<br>
+To verify this Vehicle API test cases are successfully installed,<br>
  you can run the test cases with ACCESS's VISS prototype environment.<br>
 (Install VISS prototype in the same host which W3C platform test is installed.)
 
@@ -56,7 +55,8 @@ VISS server configuration (host, protocol, port) are already defined in the conf
 ```
 ./web-platform-tests/vehicle/viss/vehicle-test-config.js
 ```
-5. Select vehicle api test by entering 'vehicle/viss' in 'Run tests under path' text box on WebUI.<br>
+
+5. Select vehicle api test by entering 'vehicle/viss' in 'Run tests under path' text box on WPT's WebUI.<br>
    Then push 'Start' button and the test cases should run.
 
 #### Run the test cases with different VISS server implementation
