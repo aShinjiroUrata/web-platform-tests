@@ -28,7 +28,7 @@ $ ./wpt serve
 Open web platform test WebUI by visiting below URL via browser.<br>
 (need to wait for a few minutes until test runner finish enumeration of test cases.)
 ```
-http://web-platform.test:8000/tools/runner/index.html
+http://web-platform-test:8000/tools/runner/index.html
 ```
 
 #### Run the test cases with  ACCESS's VISS prototype as a trial target

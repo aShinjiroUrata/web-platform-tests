@@ -239,7 +239,7 @@ function verifyInterval( notif1, notif2) {
   if ( diff > intervalTime * ((100+intervalMargin)/100)) {
     //addLogFailure("interval: "+ intervalTime +" < timediff: "+ diff +" (margin: "+intervalMargin+"%)");
     return false;
-  } else 
+  } else
   if ( diff < intervalTime * ((100-intervalMargin)/100)) {
     //addLogFailure("interval: "+ intervalTime +" > timediff: "+ diff +" (margin: "+intervalMargin+"%)");
     return false;
@@ -254,7 +254,7 @@ function verifyRange( _notif) {
   if ( val > range_above) {
     //addLogFailure("Range_above:"+ range_above +" < value:"+ val);
     return false;
-  } else 
+  } else
   if ( val < range_below) {
     //addLogFailure("Range_below:"+ range_below +" > value:"+ val);
     return false;

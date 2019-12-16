@@ -66,9 +66,9 @@ function test_main() {
       phase = PH_2_TRY_ACTION_SENT;
       addLogMessage("PH2: Try action before Authorize.");
       // Conn1 data set request send
-      send_targetAction(wsconn1); 
+      send_targetAction(wsconn1);
       // Conn2 data set request send
-      send_targetAction(wsconn2); 
+      send_targetAction(wsconn2);
     })();
 
   } else if (phase == PH_2_TRY_ACTION_SENT ) {
@@ -109,8 +109,8 @@ function test_main() {
         //addLogMessage("----: Expected behavior:");
         //addLogMessage("----: - wsconn1: action fail.");
         //addLogMessage("----: - wsconn2: action succeed because of Authorize.");
-        send_targetAction(wsconn1); 
-        send_targetAction(wsconn2); 
+        send_targetAction(wsconn1);
+        send_targetAction(wsconn2);
       }
     })();
 
@@ -146,9 +146,9 @@ wsconn1.onopen = function() {
   // Timeout for the case of server doesn't return response
   t.step_timeout(function() {
     if (phase < PH_1_TWO_CONNS_ESTABLISHED ) {
-      // In case that timeout expired before WebSocket connection establish, 
+      // In case that timeout expired before WebSocket connection establish,
       //  the test should be terminated as failure.
-      // In case this timeout expired after connection established and move on to next phase, 
+      // In case this timeout expired after connection established and move on to next phase,
       //  the timeout should be ignored.
       helper_terminate_failure("Finish by timeout", wsconn1, wsconn2);
     }

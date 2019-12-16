@@ -155,7 +155,7 @@ function extractPartialVss(_objVssAll, _strPath) {
     }
 
     // The 'node' is found in full VSS tree.
-    console.log("Node:["+node+"] exists");
+    // log("Node:["+node+"] exists");
     var nextNode = allTreePtr[node];
 
     // Add copy of current Node to 'resultTree' for creating vss tree to return
@@ -163,8 +163,8 @@ function extractPartialVss(_objVssAll, _strPath) {
 
     // If this is the last round of loop, just return resultTree and finish
     if (i == pathLen-1) {
-      console.log("<br>SUCCESS: reached to the end");
-      console.log("res = " + JSON.stringify(resultTree));
+      // _onsole.log("<br>SUCCESS: reached to the end");
+      // log("res = " + JSON.stringify(resultTree));
       return resultTree;
     }
 
@@ -172,12 +172,12 @@ function extractPartialVss(_objVssAll, _strPath) {
 
     // Move allTreePtr position
     if (nextNode['children'] != undefined) {
-      console.log("children exists. Go next loop.");
+      // log("children exists. Go next loop.");
       allTreePtr = nextNode['children'];
     } else {
       // In case current 'node' doesn't have 'children'
       // which means 'leaf' or 'irregular node'.
-      console.log("No children. Go next loop");
+      // log("No children. Go next loop");
       allTreePtr = nextNode;
     }
 

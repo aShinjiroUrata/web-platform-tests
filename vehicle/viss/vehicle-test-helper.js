@@ -332,7 +332,7 @@ function addLogFailure(_msg) {
   document.getElementById('result').innerHTML = msg;
 }
 
-function getUniqueReqId() { 
+function getUniqueReqId() {
   // create semi-uniquID (for implementation easyness) as timestamp(milli sec)+random string
   // uniqueness is not 100% guaranteed.
   var strength = 1000;
@@ -341,17 +341,17 @@ function getUniqueReqId() {
 }
 
 function createRequestJson(_action, _path, _val, _filter ) {
-  var reqJson = null;   
+  var reqJson = null;
   var reqId = getUniqueReqId();
   if (_action === 'get') {
-    reqJson = '{"action":"get","path":"'+_path+'","requestId":"'+reqId+'"}';   
+    reqJson = '{"action":"get","path":"'+_path+'","requestId":"'+reqId+'"}';
   } else if (_action === 'set') {
-    reqJson = '{"action":"set","path":"'+_path+'","value":"'+_val+'","requestId":"'+reqId+'"}';  
+    reqJson = '{"action":"set","path":"'+_path+'","value":"'+_val+'","requestId":"'+reqId+'"}';
   } else if (_action === 'subscribe') {
     var str_filter = JSON.stringify(_filter);
-    reqJson = '{"action":"subscribe","path":"'+_path+'","filters":"'+ str_filter +'","requestId":"'+reqId+'"}';   
+    reqJson = '{"action":"subscribe","path":"'+_path+'","filters":"'+ str_filter +'","requestId":"'+reqId+'"}';
   }
-  return reqJson;  
+  return reqJson;
 }
 
 // === test suite helper ===

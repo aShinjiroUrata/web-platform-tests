@@ -70,7 +70,7 @@ var TOKEN_INVALID = "token_invalid";
 //
 //  A test will pass with the following scenario
 //   - Execute this 'action' with 'data path' and result in failure.
-//   - Execute 'authorize' action with TOKEN_VALID and successful. 
+//   - Execute 'authorize' action with TOKEN_VALID and successful.
 //     Then this 'action' with 'data_path' is authorized.
 //   - Execute this 'action' with 'data paht' again and succeed this time.
 var AUTH_ACCESS_PATH   = "Signal.Cabin.Door.Row1.Right.IsLocked";

@@ -193,7 +193,7 @@ function verifyInterval( notif1, notif2) {
   if ( diff > intervalTime * ((100+intervalMargin)/100)) {
     addLogFailure("interval: "+ intervalTime +" < timediff: "+ diff +" (margin: "+intervalMargin+"%)");
     return false;
-  } else 
+  } else
   if ( diff < intervalTime * ((100-intervalMargin)/100)) {
     addLogFailure("interval: "+ intervalTime +" > timediff: "+ diff +" (margin: "+intervalMargin+"%)");
     return false;
